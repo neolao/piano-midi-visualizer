@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-09
+
 ### Fixed
 
 - La page occupe toute la hauteur de l'écran sur Android : la barre de boutons colle au bord du bas, sans bande vide dessous, et laisse la place de la barre de gestes du système.
@@ -68,7 +70,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 - Les utilisateurs peuvent activer le MIDI d'un clic et voir la liste de leurs pianos branchés, mise à jour à chaud, avec des messages clairs si le navigateur est incompatible, si l'accès est refusé ou en cas d'échec.
 
-[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/neolao/piano-midi-visualizer/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/neolao/piano-midi-visualizer/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.5.0...v0.6.0

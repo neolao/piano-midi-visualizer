@@ -54,4 +54,5 @@
 - Partition, historique, clavier visuel, sélecteur de périphérique non réalisés.
 - Chaînes codées en dur (acceptable en français seul).
 - Pas de favicon (404 au chargement).
+- No design tokens yet — `style.md` is the reference until `/ux:implement` creates them.
 - Liste des pianos non capturée.

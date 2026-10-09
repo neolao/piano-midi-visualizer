@@ -33,6 +33,8 @@ export const STRINGS = {
 	chord: (notes: string) => `Accord : ${notes}`,
 	describeCurrent: (notes: string) => `Accord en cours : ${notes}.`,
 	describeNone: "Aucune note en cours.",
+	describeRhythm: (signature: string, tempo: number) =>
+		`Mesure ${signature}, tempo ${tempo}.`,
 	describeHistoryEmpty: "Historique vide.",
 	describeHistory: (count: number) =>
 		`Historique : ${count} ${count === 1 ? "accord" : "accords"}.`,
@@ -43,7 +45,27 @@ export const STRINGS = {
 	optionAnnounce: "Annonce du dernier accord après un silence",
 	optionAnnounceHelp: "Lue par votre lecteur d'écran",
 	optionShortcuts: "Raccourcis clavier",
-	optionShortcutsHelp: "F : figer · E : effacer · L : relire l'accord",
+	optionShortcutsHelp:
+		"F : figer · E : effacer · L : relire l'accord · M : métronome",
+	rhythm: "Rythme",
+	signatureLabel: "Mesure",
+	tempoLabel: "Tempo (battements par minute)",
+	tempoLess: "Ralentir",
+	tempoMore: "Accélérer",
+	optionMuted: "Couper le son du métronome",
+	optionMutedHelp: "Le temps reste affiché à l'écran",
+	metronomeStart: "Démarrer le métronome",
+	metronomeStop: "Arrêter le métronome",
+	metronomeStarted: "Métronome en marche",
+	metronomeStartedSilent:
+		"Métronome en marche, sans son : le navigateur n'a pas autorisé l'audio",
+	metronomeStopped: "Métronome arrêté",
+	signatureChanged: (signature: string) => `Mesure ${signature}`,
+	tempoChanged: (tempo: number) => `Tempo ${tempo}`,
+	tempoInvalid: "Tempo non valide : entrez un nombre entre 40 et 200",
+	tempoClamped: (tempo: number) => `Tempo limité à ${tempo}`,
+	soundMuted: "Son du métronome coupé",
+	soundOn: "Son du métronome activé",
 	on: "Activé",
 	off: "Désactivé",
 } as const;

@@ -11,9 +11,11 @@ La page est écrite en TypeScript sans framework. La logique pure est séparée 
 | `midi-access.ts` | Demande l'accès Web MIDI, calcule l'état (`MidiStatus`), suit les branchements, filtre sur le piano choisi (`select`) et transmet les messages de notes. |
 | `midi-panel.ts` | Dessine la barre MIDI et la liste de choix du piano, scène d'état (activation, erreurs, aide, bandeau « débranché »). |
 | `midi.ts` | Décode les messages MIDI bruts en `NoteEvent`. |
-| `chords.ts`, `held-notes.ts` | Notes tenues, regroupement en accords (60 ms), historique borné, effacement et restauration. |
+| `chords.ts`, `held-notes.ts` | Notes tenues, regroupement en accords (60 ms), durée de maintien de chaque accord, historique borné, effacement et restauration. |
 | `staff.ts` | Place une note sur la portée (clé, altération, nom français, clé VexFlow). |
-| `score.ts` | Dessine les deux portées avec VexFlow (8 emplacements). |
+| `score.ts` | Dessine les deux portées avec VexFlow (8 accords visibles), l'indication de mesure, les barres de mesure et les durées. |
+| `rhythm.ts` | Mesures, tempo, arrondi d'une durée de maintien en valeur de note, découpage en mesures. |
+| `metronome.ts` | Métronome : clics planifiés à l'avance sur l'horloge audio, temps affiché à l'heure du clic. |
 | `describe.ts` | Décrit les accords en toutes lettres pour les lecteurs d'écran. |
 | `settings.ts` | Réglages mémorisés dans `localStorage`. |
 | `strings.ts` | Tous les textes en français. |
@@ -26,6 +28,8 @@ flowchart LR
   Acces -- MidiStatus --> Panneau[midi-panel]
   Accords -- ChordSnapshot --> Partition[score]
   Accords --> Description[describe]
+  Rythme[rhythm] --> Partition
+  Metronome[metronome] --> App
   Reglages[settings] --> App[app]
   App --> Panneau
   App --> Partition
@@ -37,4 +41,5 @@ flowchart LR
 - L'environnement (`MidiEnvironment`, `Storage`, horloge) est injecté : les tests simulent le navigateur sans matériel.
 - Le DOM est construit avec `textContent` uniquement, jamais de HTML brut.
 - Les styles passent par des variables CSS (`src/styles/tokens.css`) ; `score.ts` les lit pour colorer le SVG.
+- Le métronome programme ses clics sur l'horloge audio du navigateur (voir `.vibe/decisions/001-rythme-simplifie-et-metronome-planifie.md`).
 - Le rendu de la partition est regroupé par image d'affichage (`requestAnimationFrame`), pas un rendu par message MIDI.

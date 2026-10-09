@@ -9,6 +9,7 @@ Page web statique, hébergée sur GitHub Pages, qui capture en direct les notes 
 - Figer l'historique pour le relire, effacer la partition (avec annulation), choisir entre dièses et bémols ; les réglages sont mémorisés.
 - Activer le MIDI d'un clic, avec des messages clairs si le navigateur est incompatible, si l'accès est refusé ou en cas d'échec.
 - Choisir quel piano écouter quand plusieurs sont branchés, avec un avertissement si le piano choisi est débranché.
+- Choisir la mesure (2/4, 3/4, 4/4, 6/8) et le tempo, lancer un métronome (son coupable, temps affiché) et voir les durées des notes et les barres de mesure sur la partition.
 - Une annonce vocale du dernier accord après un silence et des raccourcis clavier (F, E, L) pour les lecteurs d'écran.
 - Utilisable en ligne, sans installation : https://neolao.github.io/piano-midi-visualizer/
 <!-- vibe:end:features -->

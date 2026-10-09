@@ -1,5 +1,7 @@
 import {
 	Accidental,
+	BarNote,
+	Dot,
 	Formatter,
 	GhostNote,
 	Renderer,
@@ -9,6 +11,13 @@ import {
 	Voice,
 } from "vexflow";
 import type { ChordSnapshot } from "./chords";
+import {
+	measureEnds,
+	type NoteValue,
+	QUARTER_NOTE,
+	quantizeDuration,
+	type Signature,
+} from "./rhythm";
 import { placeNote } from "./staff";
 
 /** Nombre d'accords visibles : l'historique défile quand il est plein. */
@@ -17,6 +26,8 @@ export const SLOTS = 8;
 export interface ScoreOptions {
 	flats: boolean;
 	names: boolean;
+	signature: Signature;
+	tempo: number;
 }
 
 export interface Score {
@@ -81,8 +92,24 @@ export function createScore(container: HTMLElement): Score {
 				font: token("--font-ui"),
 			};
 			const hasCurrent = snapshot.current.length > 0;
-			const past = snapshot.history.slice(-(SLOTS - (hasCurrent ? 1 : 0)));
-			const chords = hasCurrent ? [...past, snapshot.current] : past;
+			const values: NoteValue[] = snapshot.history.map((_, i) =>
+				quantizeDuration(
+					snapshot.durations[i] ?? 0,
+					options.tempo,
+					options.signature,
+				),
+			);
+			if (hasCurrent) values.push(QUARTER_NOTE);
+			const allChords = hasCurrent
+				? [...snapshot.history, snapshot.current]
+				: snapshot.history;
+			const ends = measureEnds(
+				values.map((v) => v.eighths),
+				options.signature,
+			);
+			const first = Math.max(0, allChords.length - SLOTS);
+			const chords = allChords.slice(first);
+			const shownValues = values.slice(first);
 
 			container.replaceChildren();
 			const renderer = new Renderer(
@@ -106,10 +133,14 @@ export function createScore(container: HTMLElement): Score {
 			};
 			const treble = new Stave(10, TREBLE_Y, WIDTH - 20, {
 				spacingBetweenLinesPx: LINE_GAP,
-			}).addClef("treble");
+			})
+				.addClef("treble")
+				.addTimeSignature(options.signature);
 			const bass = new Stave(10, BASS_Y, WIDTH - 20, {
 				spacingBetweenLinesPx: LINE_GAP,
-			}).addClef("bass");
+			})
+				.addClef("bass")
+				.addTimeSignature(options.signature);
 			for (const stave of [treble, bass]) {
 				stave.setStyle(lineStyle);
 				stave.setContext(context).draw();
@@ -127,12 +158,13 @@ export function createScore(container: HTMLElement): Score {
 				clef: "treble" | "bass",
 				chord: number[],
 				isCurrent: boolean,
+				value: NoteValue,
 			) => {
 				const placed = [...chord]
 					.sort((a, b) => a - b)
 					.map((m) => placeNote(m, options.flats));
 				const inClef = placed.filter((n) => n.clef === clef);
-				if (inClef.length === 0) return new GhostNote({ duration: "w" });
+				if (inClef.length === 0) return new GhostNote({ duration: value.vex });
 				const style = isCurrent
 					? {
 							fillStyle: colors.current,
@@ -142,9 +174,12 @@ export function createScore(container: HTMLElement): Score {
 					: { fillStyle: colors.history, strokeStyle: colors.history };
 				const note = new StaveNote({
 					keys: inClef.map((n) => n.vexKey),
-					duration: "w",
+					duration: value.vex,
 					clef,
 				});
+				if (value.vex.endsWith("d")) {
+					Dot.buildAndAttach([note], { all: true });
+				}
 				inClef.forEach((n, i) => {
 					if (n.accidental === 0) return;
 					const accidental = new Accidental(n.accidental > 0 ? "#" : "b");
@@ -155,24 +190,30 @@ export function createScore(container: HTMLElement): Score {
 				return note;
 			};
 
-			const trebleNotes: (StaveNote | GhostNote)[] = [];
-			const bassNotes: (StaveNote | GhostNote)[] = [];
+			type Tickable = StaveNote | GhostNote | BarNote;
+			const trebleNotes: Tickable[] = [];
+			const bassNotes: Tickable[] = [];
+			const anchors: { treble: Tickable; bass: Tickable }[] = [];
 			for (let slot = 0; slot < SLOTS; slot++) {
 				const chord = chords[slot];
+				const value = shownValues[slot] ?? QUARTER_NOTE;
 				const isCurrent = hasCurrent && slot === chords.length - 1;
-				trebleNotes.push(
-					chord
-						? notesFor("treble", chord, isCurrent)
-						: new GhostNote({ duration: "w" }),
-				);
-				bassNotes.push(
-					chord
-						? notesFor("bass", chord, isCurrent)
-						: new GhostNote({ duration: "w" }),
-				);
+				const treble = chord
+					? notesFor("treble", chord, isCurrent, value)
+					: new GhostNote({ duration: value.vex });
+				const bass = chord
+					? notesFor("bass", chord, isCurrent, value)
+					: new GhostNote({ duration: value.vex });
+				trebleNotes.push(treble);
+				bassNotes.push(bass);
+				anchors.push({ treble, bass });
+				if (chord && ends.has(first + slot)) {
+					trebleNotes.push(new BarNote());
+					bassNotes.push(new BarNote());
+				}
 			}
 
-			const voice = (notes: (StaveNote | GhostNote)[]) =>
+			const voice = (notes: Tickable[]) =>
 				new Voice({ numBeats: SLOTS, beatValue: 1 })
 					.setMode(Voice.Mode.SOFT)
 					.addTickables(notes);
@@ -194,7 +235,7 @@ export function createScore(container: HTMLElement): Score {
 				const slot = chords.length - 1;
 				const lowest = placeNote(Math.min(...snapshot.current), options.flats);
 				const anchor =
-					lowest.clef === "treble" ? trebleNotes[slot] : bassNotes[slot];
+					lowest.clef === "treble" ? anchors[slot].treble : anchors[slot].bass;
 				const stave = lowest.clef === "treble" ? treble : bass;
 				const label = [...snapshot.current]
 					.sort((a, b) => a - b)

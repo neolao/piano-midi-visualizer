@@ -1,9 +1,25 @@
+import {
+	clampTempo,
+	DEFAULT_SIGNATURE,
+	DEFAULT_TEMPO,
+	isSignature,
+	type Signature,
+} from "./rhythm";
+
 export interface Settings {
 	names: boolean;
 	flats: boolean;
 	announce: boolean;
 	shortcuts: boolean;
+	/** Clic du métronome coupé. */
+	muted: boolean;
+	signature: Signature;
+	tempo: number;
 }
+
+export type BooleanSetting = {
+	[K in keyof Settings]: Settings[K] extends boolean ? K : never;
+}[keyof Settings];
 
 const KEY = "piano-midi-visualizer:settings";
 const DEFAULTS: Settings = {
@@ -11,6 +27,9 @@ const DEFAULTS: Settings = {
 	flats: false,
 	announce: true,
 	shortcuts: true,
+	muted: false,
+	signature: DEFAULT_SIGNATURE,
+	tempo: DEFAULT_TEMPO,
 };
 
 function parse(raw: string | null): Partial<Settings> {
@@ -18,11 +37,19 @@ function parse(raw: string | null): Partial<Settings> {
 	try {
 		const value: unknown = JSON.parse(raw);
 		if (typeof value !== "object" || value === null) return {};
+		const stored = value as Record<string, unknown>;
 		const result: Partial<Settings> = {};
-		for (const key of Object.keys(DEFAULTS) as (keyof Settings)[]) {
-			const candidate = (value as Record<string, unknown>)[key];
-			if (typeof candidate === "boolean") result[key] = candidate;
+		for (const key of Object.keys(DEFAULTS) as BooleanSetting[]) {
+			if (
+				typeof DEFAULTS[key] === "boolean" &&
+				typeof stored[key] === "boolean"
+			) {
+				result[key] = stored[key];
+			}
 		}
+		if (isSignature(stored.signature)) result.signature = stored.signature;
+		if (typeof stored.tempo === "number")
+			result.tempo = clampTempo(stored.tempo);
 		return result;
 	} catch {
 		return {};

@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Les utilisateurs règlent la mesure (2/4, 3/4, 4/4 ou 6/8) et le tempo, retrouvés à la visite suivante, et lancent un métronome qui bat la mesure avec un son (qu'on peut couper) et un temps affiché à l'écran.
+- La partition affiche l'indication de mesure, les barres de mesure et la durée de chaque note (de la double croche à la ronde) d'après le temps pendant lequel la touche est tenue ; les lecteurs d'écran entendent mesure, tempo et durées.
+
 ## [0.3.1] - 2026-10-09
 
 ### Fixed

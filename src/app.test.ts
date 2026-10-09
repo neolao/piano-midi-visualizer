@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountApp } from "./app";
+import type { ClickPlayer } from "./metronome";
 import type { MidiAccessLike, MidiInputLike } from "./midi-access";
 
 const renders: unknown[] = [];
@@ -29,7 +30,11 @@ function memoryStorage(): Storage {
 	};
 }
 
-function boot(storage: Storage = memoryStorage(), now = () => 0) {
+function boot(
+	storage: Storage = memoryStorage(),
+	now = () => 0,
+	player?: ClickPlayer,
+) {
 	piano = {
 		id: "a",
 		name: "Yamaha P-125",
@@ -45,6 +50,7 @@ function boot(storage: Storage = memoryStorage(), now = () => 0) {
 		},
 		storage,
 		now,
+		player,
 	});
 }
 
@@ -89,7 +95,7 @@ describe("mountApp", () => {
 		expect(renders.at(-1)).toMatchObject({ snapshot: { current: [60, 64] } });
 		expect(root.querySelector(".hint")?.hasAttribute("hidden")).toBe(true);
 		expect(root.querySelector(".score .sr")?.textContent).toBe(
-			"Accord en cours : Do 4, Mi 4. Historique vide.",
+			"Mesure 4/4, tempo 80. Accord en cours : Do 4, Mi 4. Historique vide.",
 		);
 	});
 
@@ -264,6 +270,7 @@ describe("mountApp", () => {
 					?.textContent,
 		);
 		expect(names).toEqual([
+			"Couper le son du métronome",
 			"Noms de notes",
 			"Bémols à la place des dièses",
 			"Annonce du dernier accord après un silence",
@@ -380,5 +387,181 @@ describe("mountApp", () => {
 		access.onstatechange?.({});
 		await flush();
 		expect(root.textContent).toContain("Roland FP-30X débranché");
+	});
+
+	describe("rythme", () => {
+		const clicks: boolean[] = [];
+		let audioOk = true;
+		const player: ClickPlayer = {
+			now: () => Date.now() / 1000,
+			click: (_, accent) => clicks.push(accent),
+			resume: async () => audioOk,
+		};
+		const live = () => root.querySelectorAll<HTMLElement>("[role=status]");
+		const said = () => [...live()].map((n) => n.textContent).join(" | ");
+		const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+		beforeEach(() => {
+			clicks.length = 0;
+			audioOk = true;
+		});
+
+		const open = () => buttonByText("Options").click();
+		const signature = (label: string) =>
+			[...root.querySelectorAll<HTMLButtonElement>("[role=radio]")].find(
+				(b) => b.textContent === label,
+			) as HTMLButtonElement;
+		const tempoInput = () =>
+			root.querySelector('input[data-rhythm="tempo"]') as HTMLInputElement;
+
+		it("propose 2/4, 3/4, 4/4 et 6/8 avec 4/4 et 80 par défaut, rien ne sonne", async () => {
+			boot(memoryStorage(), () => 0, player);
+			open();
+			const radios = [
+				...root.querySelectorAll<HTMLButtonElement>("[role=radio]"),
+			];
+			expect(radios.map((b) => b.textContent)).toEqual([
+				"2/4",
+				"3/4",
+				"4/4",
+				"6/8",
+			]);
+			expect(radios.map((b) => b.getAttribute("aria-checked"))).toEqual([
+				"false",
+				"false",
+				"true",
+				"false",
+			]);
+			expect(tempoInput().value).toBe("80");
+			await wait(200);
+			expect(clicks).toEqual([]);
+			expect(buttonByText("Démarrer le métronome")).toBeTruthy();
+		});
+
+		it("mémorise la mesure et le tempo choisis et les transmet à la partition", async () => {
+			const storage = memoryStorage();
+			boot(storage, () => 0, player);
+			open();
+			signature("3/4").click();
+			setTempoValue("96");
+			await flush();
+			expect(renders.at(-1)).toMatchObject({
+				options: { signature: "3/4", tempo: 96 },
+			});
+			expect(storage.getItem("piano-midi-visualizer:settings")).toContain(
+				'"signature":"3/4","tempo":96',
+			);
+		});
+
+		function setTempoValue(value: string) {
+			tempoInput().value = value;
+			tempoInput().dispatchEvent(new Event("change"));
+		}
+
+		it("limite un tempo hors bornes et le dit", async () => {
+			boot(memoryStorage(), () => 0, player);
+			open();
+			setTempoValue("999");
+			await wait(60);
+			expect(tempoInput().value).toBe("200");
+			expect(said()).toContain("Tempo limité à 200");
+		});
+
+		it("refuse un tempo vide sans changer le réglage", async () => {
+			boot(memoryStorage(), () => 0, player);
+			open();
+			setTempoValue("");
+			await wait(60);
+			expect(tempoInput().value).toBe("80");
+			expect(said()).toContain("Tempo non valide");
+		});
+
+		it("accélère et ralentit le tempo par pas de 5 avec les gros boutons", async () => {
+			boot(memoryStorage(), () => 0, player);
+			open();
+			(root.querySelector('[aria-label="Accélérer"]') as HTMLElement).click();
+			expect(tempoInput().value).toBe("85");
+			(root.querySelector('[aria-label="Ralentir"]') as HTMLElement).click();
+			(root.querySelector('[aria-label="Ralentir"]') as HTMLElement).click();
+			expect(tempoInput().value).toBe("75");
+		});
+
+		it("annule un changement de mesure sans perdre l'historique", async () => {
+			boot(memoryStorage(), () => 0, player);
+			buttonByText("Activer le MIDI").click();
+			await flush();
+			send(0x90, 60, 100);
+			send(0x80, 60, 0);
+			open();
+			signature("6/8").click();
+			await flush();
+			expect(renders.at(-1)).toMatchObject({
+				snapshot: { history: [[60]] },
+				options: { signature: "6/8" },
+			});
+			buttonByText("Annuler").click();
+			await flush();
+			expect(renders.at(-1)).toMatchObject({
+				snapshot: { history: [[60]] },
+				options: { signature: "4/4" },
+			});
+		});
+
+		it("démarre et arrête le métronome en annonçant l'état une seule fois", async () => {
+			boot(memoryStorage(), () => 0, player);
+			buttonByText("Démarrer le métronome").click();
+			await wait(250);
+			expect(clicks[0]).toBe(true);
+			expect(said()).toContain("Métronome en marche");
+			expect(root.querySelector(".beat")?.textContent).toBe("1");
+			buttonByText("Arrêter le métronome").click();
+			await wait(60);
+			expect(said()).toContain("Métronome arrêté");
+			expect(root.querySelector(".beat")?.textContent).toBe("");
+		});
+
+		it("se pilote avec la touche M quand les raccourcis sont actifs", async () => {
+			boot(memoryStorage(), () => 0, player);
+			document.dispatchEvent(new KeyboardEvent("keydown", { key: "m" }));
+			await wait(100);
+			expect(buttonByText("Arrêter le métronome")).toBeTruthy();
+			document.dispatchEvent(new KeyboardEvent("keydown", { key: "m" }));
+			expect(buttonByText("Démarrer le métronome")).toBeTruthy();
+		});
+
+		it("n'émet aucun son quand il est coupé mais garde le temps affiché", async () => {
+			boot(memoryStorage(), () => 0, player);
+			open();
+			(root.querySelector('[data-key="muted"]') as HTMLButtonElement).click();
+			await wait(60);
+			expect(said()).toContain("Son du métronome coupé");
+			buttonByText("Démarrer le métronome").click();
+			await wait(250);
+			expect(clicks).toEqual([]);
+			expect(root.querySelector(".beat")?.textContent).toBe("1");
+		});
+
+		it("prévient quand le navigateur refuse l'audio, et bat quand même", async () => {
+			audioOk = false;
+			boot(memoryStorage(), () => 0, player);
+			buttonByText("Démarrer le métronome").click();
+			await wait(250);
+			expect(said()).toContain("sans son");
+			expect(root.querySelector(".beat")?.textContent).toBe("1");
+		});
+
+		it("décrit la durée de chaque accord de l'historique pour les lecteurs d'écran", async () => {
+			let t = 0;
+			boot(memoryStorage(), () => t, player);
+			buttonByText("Activer le MIDI").click();
+			await flush();
+			send(0x90, 60, 100);
+			t = 1125;
+			send(0x80, 60, 0);
+			await flush();
+			expect(root.querySelector(".score .sr")?.textContent).toContain(
+				"Do 4 (noire pointée)",
+			);
+		});
 	});
 });

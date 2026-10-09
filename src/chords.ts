@@ -3,12 +3,14 @@ import { createHeldNotes } from "./held-notes";
 export interface ChordSnapshot {
 	current: number[];
 	history: number[][];
+	/** Durée de maintien (ms) de chaque accord de l'historique. */
+	durations: number[];
 }
 
 export interface ChordTracker {
 	noteOn(note: number, time: number): void;
-	noteOff(note: number): void;
-	releaseAll(): void;
+	noteOff(note: number, time?: number): void;
+	releaseAll(time?: number): void;
 	snapshot(): ChordSnapshot;
 	clear(): ChordSnapshot;
 	restore(snapshot: ChordSnapshot): void;
@@ -28,13 +30,23 @@ export function createChordTracker({
 	const held = createHeldNotes();
 	let current: number[] = [];
 	let history: number[][] = [];
+	let durations: number[] = [];
 	let chordStart = 0;
 
-	const closeCurrent = () => {
+	const closeCurrent = (end: number) => {
 		if (current.length === 0) return;
 		history = [...history, current].slice(-maxHistory);
+		durations = [...durations, Math.max(0, end - chordStart)].slice(
+			-maxHistory,
+		);
 		current = [];
 	};
+
+	const copy = (): ChordSnapshot => ({
+		current: [...current],
+		history: history.map((c) => [...c]),
+		durations: [...durations],
+	});
 
 	const sorted = (notes: number[]) => [...notes].sort((a, b) => a - b);
 
@@ -46,35 +58,31 @@ export function createChordTracker({
 				current = sorted([...current, note]);
 				return;
 			}
-			closeCurrent();
+			closeCurrent(time);
 			current = [note];
 			chordStart = time;
 		},
-		noteOff(note) {
+		noteOff(note, time = chordStart) {
 			if (!held.sorted().includes(note)) return;
 			held.release(note);
-			if (held.size === 0) closeCurrent();
+			if (held.size === 0) closeCurrent(time);
 		},
-		releaseAll() {
+		releaseAll(time = chordStart) {
 			held.clear();
-			closeCurrent();
+			closeCurrent(time);
 		},
-		snapshot: () => ({
-			current: [...current],
-			history: history.map((c) => [...c]),
-		}),
+		snapshot: copy,
 		clear() {
-			const before = {
-				current: [...current],
-				history: history.map((c) => [...c]),
-			};
+			const before = copy();
 			current = [];
 			history = [];
+			durations = [];
 			return before;
 		},
 		restore(snapshot) {
 			current = [...snapshot.current];
 			history = snapshot.history.map((c) => [...c]);
+			durations = [...snapshot.durations];
 		},
 		get heldCount() {
 			return held.size;

@@ -8,8 +8,13 @@ beforeEach(() => {
 	host = document.querySelector("#host") as HTMLElement;
 });
 
-const options = { flats: false, names: false };
-const empty = { current: [], history: [] };
+const options = {
+	flats: false,
+	names: false,
+	signature: "4/4" as const,
+	tempo: 60,
+};
+const empty = { current: [], history: [], durations: [] };
 
 describe("createScore — clés fixes", () => {
 	it("ajoute une copie fixe des clés qui ne montre que le bord gauche de la portée", () => {
@@ -27,7 +32,10 @@ describe("createScore — clés fixes", () => {
 	it("garde une seule copie des clés après plusieurs rendus", () => {
 		const score = createScore(host);
 		score.render(empty, options);
-		score.render({ current: [60], history: [[64]] }, options);
+		score.render(
+			{ current: [60], history: [[64]], durations: [1000] },
+			options,
+		);
 		expect(host.querySelectorAll(".clefs")).toHaveLength(1);
 	});
 
@@ -36,5 +44,54 @@ describe("createScore — clés fixes", () => {
 		expect(host.querySelector(".clefs")?.getAttribute("aria-hidden")).toBe(
 			"true",
 		);
+	});
+});
+
+describe("createScore — rythme", () => {
+	const quarters = (count: number) => ({
+		current: [],
+		history: Array.from({ length: count }, (_, i) => [60 + i]),
+		durations: Array.from({ length: count }, () => 1000),
+	});
+	const count = (selector: string) =>
+		host.querySelectorAll(`:scope > svg ${selector}`).length;
+	/** Barres de mesure : hors les 2 bords de chacune des 2 portées. */
+	const bars = () => count(".vf-stavebarline") - 4;
+
+	it("affiche l'indication de mesure sur les deux portées", () => {
+		createScore(host).render(empty, { ...options, signature: "3/4" });
+		expect(count(".vf-timesignature")).toBeGreaterThanOrEqual(2);
+	});
+
+	it("trace une barre de mesure après quatre noires en 4/4", () => {
+		createScore(host).render(quarters(4), options);
+		expect(bars()).toBe(2);
+	});
+
+	it("trace une barre de plus par mesure complète", () => {
+		createScore(host).render(quarters(8), options);
+		expect(bars()).toBe(4);
+	});
+
+	it("ne trace pas de barre tant que la mesure n'est pas pleine", () => {
+		createScore(host).render(quarters(3), options);
+		expect(bars()).toBe(0);
+	});
+
+	it("change le découpage avec la mesure : trois noires remplissent une mesure en 3/4", () => {
+		createScore(host).render(quarters(3), { ...options, signature: "3/4" });
+		expect(bars()).toBe(2);
+	});
+
+	it("dessine une hampe pour une noire et aucune pour une ronde", () => {
+		const render = (ms: number) => {
+			createScore(host).render(
+				{ current: [], history: [[64]], durations: [ms] },
+				options,
+			);
+			return count(".vf-stem");
+		};
+		expect(render(1000)).toBeGreaterThan(0);
+		expect(render(4000)).toBe(0);
 	});
 });

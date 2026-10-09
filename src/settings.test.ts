@@ -22,7 +22,38 @@ describe("createSettings", () => {
 			flats: false,
 			announce: true,
 			shortcuts: true,
+			muted: false,
+			signature: "4/4",
+			tempo: 80,
 		});
+	});
+
+	it("retrouve la mesure, le tempo et le son coupé à la visite suivante", () => {
+		const storage = memoryStorage();
+		createSettings(storage).set({ signature: "3/4", tempo: 96, muted: true });
+		expect(createSettings(storage).get()).toMatchObject({
+			signature: "3/4",
+			tempo: 96,
+			muted: true,
+		});
+	});
+
+	it("ignore une mesure inconnue et un tempo hors bornes mémorisés", () => {
+		const raw = '{"signature":"5/4","tempo":999,"muted":"oui"}';
+		expect(
+			createSettings(
+				memoryStorage({ "piano-midi-visualizer:settings": raw }),
+			).get(),
+		).toMatchObject({ signature: "4/4", tempo: 200, muted: false });
+	});
+
+	it("ignore un tempo qui n'est pas un nombre", () => {
+		const raw = '{"tempo":"vite"}';
+		expect(
+			createSettings(
+				memoryStorage({ "piano-midi-visualizer:settings": raw }),
+			).get().tempo,
+		).toBe(80);
 	});
 
 	it("mémorise un changement et le retrouve à la visite suivante", () => {

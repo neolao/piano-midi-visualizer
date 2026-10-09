@@ -1,5 +1,10 @@
 import { type ChordSnapshot, createChordTracker } from "./chords";
 import { describeChord, describeScore } from "./describe";
+import {
+	browserClickPlayer,
+	type ClickPlayer,
+	createMetronome,
+} from "./metronome";
 import { decodeMidiMessage } from "./midi";
 import {
 	createMidiController,
@@ -7,8 +12,17 @@ import {
 	type MidiStatus,
 } from "./midi-access";
 import { createMidiPanel } from "./midi-panel";
+import {
+	beatsPerMeasure,
+	clampTempo,
+	MAX_TEMPO,
+	MIN_TEMPO,
+	quantizeDuration,
+	SIGNATURES,
+	type Signature,
+} from "./rhythm";
 import { createScore, SLOTS } from "./score";
-import { createSettings, type Settings } from "./settings";
+import { type BooleanSetting, createSettings } from "./settings";
 import { STRINGS } from "./strings";
 
 const GROUP_MS = 60;
@@ -20,7 +34,10 @@ export interface AppDependencies {
 	environment: MidiEnvironment;
 	storage?: Storage;
 	now?: () => number;
+	player?: ClickPlayer;
 }
+
+const TEMPO_STEP = 5;
 
 function el<K extends keyof HTMLElementTagNameMap>(
 	tag: K,
@@ -138,11 +155,21 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 
 	const freezeButton = button("", () => toggleFreeze(), "F");
 	const clearButton = button(STRINGS.clear, () => clearScore(), "E");
+	const metronomeButton = button("", () => void toggleMetronome(), "M");
+	const beatIndicator = el("span", "beat");
+	beatIndicator.setAttribute("aria-hidden", "true");
 	const optionsButton = button(STRINGS.options, () => toggleDrawer());
 	optionsButton.setAttribute("aria-expanded", "false");
 	optionsButton.setAttribute("aria-controls", DRAWER_ID);
 	const grow = el("span", "grow");
-	cmd.append(freezeButton, clearButton, grow, optionsButton);
+	cmd.append(
+		freezeButton,
+		clearButton,
+		metronomeButton,
+		beatIndicator,
+		grow,
+		optionsButton,
+	);
 
 	const toggleFreeze = () => {
 		if (!isReady()) return;
@@ -156,7 +183,7 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		const before = tracker.clear();
 		playedSinceAnnounce = false;
 		const previousFrozen = frozen;
-		frozen = frozen ? { current: [], history: [] } : null;
+		frozen = frozen ? { current: [], history: [], durations: [] } : null;
 		refresh();
 		toast(STRINGS.cleared, STRINGS.undo, () => {
 			const since = tracker.snapshot();
@@ -168,6 +195,11 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 						? [before.current]
 						: []),
 					...since.history,
+				],
+				durations: [
+					...before.durations,
+					...(since.current.length > 0 && before.current.length > 0 ? [0] : []),
+					...since.durations,
 				],
 			});
 			frozen = previousFrozen;
@@ -210,7 +242,7 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		const row = (
 			label: string,
 			help: string,
-			key: keyof Settings,
+			key: BooleanSetting,
 		): HTMLElement => {
 			const wrapper = el("div", "option");
 			const text = el("span");
@@ -221,6 +253,10 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 			text.append(labelEl, helpEl);
 			const toggle = button(current[key] ? STRINGS.on : STRINGS.off, () => {
 				settings.set({ [key]: !settings.get()[key] });
+				if (key === "muted") {
+					applyRhythm();
+					say(settings.get().muted ? STRINGS.soundMuted : STRINGS.soundOn);
+				}
 				renderDrawer();
 				refresh();
 				drawerHost
@@ -236,6 +272,8 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		};
 		drawer.append(
 			el("h2", undefined, STRINGS.options),
+			rhythmSection(current.signature, current.tempo),
+			row(STRINGS.optionMuted, STRINGS.optionMutedHelp, "muted"),
 			row(STRINGS.optionNames, STRINGS.optionNamesHelp, "names"),
 			row(STRINGS.optionFlats, STRINGS.optionFlatsHelp, "flats"),
 			row(STRINGS.optionAnnounce, STRINGS.optionAnnounceHelp, "announce"),
@@ -245,17 +283,143 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		drawerHost.replaceChildren(drawer);
 	};
 
+	// --- rythme
+	const applyRhythm = () => {
+		const { signature, tempo, muted } = settings.get();
+		metronome.setRhythm({ beats: beatsPerMeasure(signature), tempo });
+		metronome.setMuted(muted);
+	};
+
+	const changeRhythm = (
+		change: { signature: Signature } | { tempo: number },
+		message: string,
+	) => {
+		const { signature, tempo } = settings.get();
+		settings.set(change);
+		applyRhythm();
+		renderDrawer();
+		focusRhythmControl(change);
+		refresh();
+		say(message);
+		toast(message, STRINGS.undo, () => {
+			settings.set({ signature, tempo });
+			applyRhythm();
+			renderDrawer();
+			refresh();
+		});
+	};
+
+	const focusRhythmControl = (change: object) => {
+		const key = "signature" in change ? "signature" : "tempo";
+		drawerHost.querySelector<HTMLElement>(`[data-rhythm="${key}"]`)?.focus();
+	};
+
+	const setTempo = (value: number, input?: HTMLInputElement) => {
+		if (!Number.isFinite(value)) {
+			if (input) input.value = String(settings.get().tempo);
+			say(STRINGS.tempoInvalid);
+			return;
+		}
+		const tempo = clampTempo(value);
+		if (tempo === settings.get().tempo) {
+			if (input) input.value = String(tempo);
+			return;
+		}
+		changeRhythm(
+			{ tempo },
+			tempo === Math.round(value)
+				? STRINGS.tempoChanged(tempo)
+				: STRINGS.tempoClamped(tempo),
+		);
+	};
+
+	const rhythmSection = (signature: Signature, tempo: number): HTMLElement => {
+		const section = el("div", "rhythm");
+		const title = el("h3", undefined, STRINGS.rhythm);
+		const group = el("div", "choices");
+		group.setAttribute("role", "radiogroup");
+		group.setAttribute("aria-label", STRINGS.signatureLabel);
+		for (const option of SIGNATURES) {
+			const choice = button(option, () =>
+				changeRhythm({ signature: option }, STRINGS.signatureChanged(option)),
+			);
+			choice.setAttribute("role", "radio");
+			choice.setAttribute("aria-checked", String(option === signature));
+			if (option === signature) choice.dataset.rhythm = "signature";
+			group.append(choice);
+		}
+		const tempoRow = el("div", "tempo");
+		const input = el("input");
+		input.type = "number";
+		input.min = String(MIN_TEMPO);
+		input.max = String(MAX_TEMPO);
+		input.value = String(tempo);
+		input.dataset.rhythm = "tempo";
+		input.setAttribute("aria-label", STRINGS.tempoLabel);
+		input.addEventListener("change", () =>
+			setTempo(input.value === "" ? Number.NaN : Number(input.value), input),
+		);
+		const less = button("−", () => setTempo(settings.get().tempo - TEMPO_STEP));
+		less.setAttribute("aria-label", STRINGS.tempoLess);
+		const more = button("+", () => setTempo(settings.get().tempo + TEMPO_STEP));
+		more.setAttribute("aria-label", STRINGS.tempoMore);
+		tempoRow.append(less, input, more);
+		section.append(
+			title,
+			group,
+			el("span", "tempo-label", STRINGS.tempoLabel),
+			tempoRow,
+		);
+		return section;
+	};
+
+	const showBeat = (beat: number) => {
+		beatIndicator.textContent = String(beat + 1);
+		beatIndicator.dataset.accent = String(beat === 0);
+		beatIndicator.dataset.on = "true";
+	};
+
+	const toggleMetronome = async () => {
+		if (metronome.running) {
+			metronome.stop();
+			beatIndicator.textContent = "";
+			delete beatIndicator.dataset.on;
+			renderMetronomeButton();
+			say(STRINGS.metronomeStopped);
+			return;
+		}
+		const started = metronome.start();
+		renderMetronomeButton();
+		const { sound } = await started;
+		say(sound ? STRINGS.metronomeStarted : STRINGS.metronomeStartedSilent);
+	};
+
+	const renderMetronomeButton = () => {
+		metronomeButton.replaceChildren(
+			document.createTextNode(
+				metronome.running ? STRINGS.metronomeStop : STRINGS.metronomeStart,
+			),
+			shortcutHint("M"),
+		);
+	};
+
 	// --- rendu
 	const renderDescription = (snapshot: ChordSnapshot, flats: boolean) => {
 		const summary = el(
 			"p",
 			undefined,
-			describeScore(snapshot.current, snapshot.history, flats),
+			describeScore(snapshot.current, snapshot.history, flats, settings.get()),
 		);
+		const { signature, tempo } = settings.get();
 		const list = el("ul");
-		for (const chord of snapshot.history) {
-			list.append(el("li", undefined, describeChord(chord, flats)));
-		}
+		snapshot.history.forEach((chord, i) => {
+			const value = quantizeDuration(
+				snapshot.durations[i] ?? 0,
+				tempo,
+				signature,
+			);
+			list.append(el("li", undefined, describeChord(chord, flats, value.name)));
+		});
 		description.replaceChildren(summary, list);
 	};
 
@@ -268,6 +432,8 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 			scoreView.render(snapshot, {
 				flats: current.flats,
 				names: current.names,
+				signature: current.signature,
+				tempo: current.tempo,
 			});
 		} catch (error) {
 			console.error("Rendu de la partition impossible", error);
@@ -326,13 +492,18 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		}, SILENCE_MS);
 	};
 
+	const metronome = createMetronome(
+		deps.player ?? browserClickPlayer(),
+		showBeat,
+	);
+
 	const controller = createMidiController(
 		deps.environment,
 		(next) => {
 			status = next;
 			panel.render(next);
 			if (next.kind === "ready") {
-				if (next.inputs.length === 0 || next.lost) tracker.releaseAll();
+				if (next.inputs.length === 0 || next.lost) tracker.releaseAll(now());
 				if (next.announcement) say(next.announcement);
 			}
 			refresh();
@@ -341,7 +512,7 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 			const event = decodeMidiMessage(data);
 			if (!event) return;
 			if (event.kind === "on") tracker.noteOn(event.note, now());
-			else tracker.noteOff(event.note);
+			else tracker.noteOff(event.note, now());
 			playedSinceAnnounce = true;
 			armSilence();
 			refresh();
@@ -351,12 +522,14 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		{ bar, notice },
 		() => void controller.activate(),
 		(id) => {
-			tracker.releaseAll();
+			tracker.releaseAll(now());
 			controller.select(id);
 		},
 	);
 	status = controller.status;
 	panel.render(status);
+	applyRhythm();
+	renderMetronomeButton();
 	renderDrawer();
 	refresh();
 
@@ -376,11 +549,12 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		}
 		if (target && /^(INPUT|SELECT|TEXTAREA)$/.test(target.tagName)) return;
 		const key = event.key.toLowerCase();
-		if (key !== "f" && key !== "e" && key !== "l") return;
+		if (key !== "f" && key !== "e" && key !== "l" && key !== "m") return;
 		event.preventDefault();
 		if (event.repeat) return;
 		if (key === "f") toggleFreeze();
 		else if (key === "e") clearScore();
+		else if (key === "m") void toggleMetronome();
 		else announceLastChord();
 	});
 }

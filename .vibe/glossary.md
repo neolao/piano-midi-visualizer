@@ -23,3 +23,12 @@ _Sources: `src/chords.ts`, `src/app.ts`, `src/describe.ts`_
 ## Partition
 Deux portées (sol et fa) où les notes et accords apparaissent sans rythme ni durée.
 _Sources: `src/score.ts`_
+
+## Mesure et tempo
+La mesure (2/4, 3/4, 4/4 ou 6/8) fixe le nombre de temps et la longueur des barres de mesure ; le tempo, de 40 à 200 battements par minute, fixe la vitesse du métronome et la valeur de chaque note. Le 6/8 se bat en deux temps de trois croches.
+_Sources: `src/rhythm.ts`, `src/metronome.ts`_
+
+## Durée d'une note
+Valeur de note (de la double croche à la ronde) la plus proche du temps pendant lequel la touche est tenue, selon le tempo. Il n'y a ni silence ni liaison ; un accord encore tenu s'affiche en noire.
+_Sources: `src/rhythm.ts`, `src/score.ts`_
+

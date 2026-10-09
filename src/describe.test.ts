@@ -31,3 +31,17 @@ describe("describeScore", () => {
 		);
 	});
 });
+
+describe("description avec rythme", () => {
+	it("ajoute la durée entre parenthèses après les notes", () => {
+		expect(describeChord([60, 64], false, "noire")).toBe("Do 4, Mi 4 (noire)");
+	});
+
+	it("annonce la mesure et le tempo avant le résumé", () => {
+		expect(
+			describeScore([], [[60]], false, { signature: "3/4", tempo: 96 }),
+		).toBe(
+			"Mesure 3/4, tempo 96. Aucune note en cours. Historique : 1 accord.",
+		);
+	});
+});

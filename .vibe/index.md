@@ -10,6 +10,8 @@
 - [`modules/staff.md`](modules/staff.md) — placement d'une note sur la portée
 - [`modules/score.md`](modules/score.md) — rendu VexFlow de la partition
 - [`modules/describe.md`](modules/describe.md) — description textuelle pour lecteurs d'écran
+- [`modules/rhythm.md`](modules/rhythm.md) — mesures, tempo et valeurs de notes
+- [`modules/metronome.md`](modules/metronome.md) — métronome à clics planifiés
 - [`modules/settings.md`](modules/settings.md) — réglages mémorisés
 - [`modules/ci.md`](modules/ci.md) — contrôles et déploiement GitHub Pages
 
@@ -23,3 +25,4 @@
 ## Other context files
 - [`models.md`](models.md) — data models
 - [`glossary.md`](glossary.md) — ubiquitous language
+- [`decisions/`](decisions/) — décisions d'architecture

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Prototype Partition en direct</title>
+<style>
+/* Tokens : .ux/style.md (direction « Cabinet de lecture », thème clair seul). Aucun token dans le projet pour l'instant. */
+:root{color-scheme:light;
+ --surface:#F7F4EE;--surface-raised:#FFFDF8;--surface-sunken:#EDE8DF;--text:#1E1B18;--text-muted:#5E5750;--note-history:#6F6760;
+ --primary:#1F5C7A;--on-primary:#FFFFFF;--border:#857D74;--focus:#1E1B18;--success:#2E6B3A;--error:#A32A2A;--warning:#7A4F00;--record:#C2185B;
+ --radius:8px;--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;
+ --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--surface);color:var(--text);font:500 18px/1.4 var(--font)}
+.app{height:calc(100dvh - 64px);min-height:520px;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;position:relative}
+button,select{font:600 18px var(--font);min-height:44px;padding:0 var(--s4);border-radius:var(--radius);border:2px solid var(--border);background:var(--surface-raised);color:var(--text);cursor:pointer;touch-action:manipulation}
+button.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+button.rec{border-color:var(--record);color:var(--record)}
+button.rec.on{background:var(--record);color:#fff}
+button:disabled{color:var(--text-muted);border-style:dashed;cursor:not-allowed}
+button[aria-pressed=true]{background:var(--surface-sunken);border-color:var(--text)}
+kbd{font:600 16px var(--font);color:var(--text-muted);margin-left:var(--s2)}
+.rec.on kbd{color:#fff}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;box-shadow:0 0 0 5px var(--surface)}
+.bar{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) var(--s4);background:var(--surface-sunken);border-bottom:2px solid var(--border);min-height:64px}
+.bar .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:18px;font-weight:600}
+.dot{width:14px;height:14px;border-radius:50%;flex:none;background:var(--success)}.dot.off{background:var(--error)}.dot.wait{background:var(--text-muted)}
+.stage{position:relative;background:var(--surface-raised);overflow:auto;display:flex;flex-direction:column;justify-content:center;padding:var(--s5) var(--s4)}
+.stage svg{display:block;width:100%;min-width:760px;height:auto}
+.msg{text-align:center;font:600 40px/1.2 var(--font);margin:var(--s4) auto;max-width:22ch;text-wrap:balance}
+.msg.sm{font-size:22px;font-weight:600;max-width:60ch;line-height:1.4}
+.center{display:flex;flex-direction:column;align-items:center;gap:var(--s4);padding:var(--s4)}
+.center p{margin:0;max-width:60ch;text-align:center;font-size:22px;font-weight:600}
+.big{font-size:22px;min-height:56px;padding:0 var(--s6)}
+.banner{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;border:2px solid var(--error);color:var(--error);background:var(--surface-raised);padding:var(--s3) var(--s4);border-radius:var(--radius);font-weight:600;font-size:20px;margin-bottom:var(--s3)}
+.banner.warn{border-color:var(--warning);color:var(--warning)}.banner .sp{flex:1}
+.banner button{color:var(--text)}
+.choose{display:flex;flex-direction:column;gap:var(--s2);align-items:stretch;min-width:min(420px,100%)}
+.choose label{display:flex;align-items:center;gap:var(--s3);min-height:44px;padding:0 var(--s4);border:2px solid var(--border);border-radius:var(--radius);background:var(--surface-raised);font-weight:600;cursor:pointer}
+.choose input{width:22px;height:22px;accent-color:var(--primary)}
+.kb{background:var(--surface-sunken);border-top:2px solid var(--border)}
+.kb>button{width:100%;border:0;border-radius:0;background:transparent;display:flex;align-items:center;justify-content:center;gap:var(--s2);min-height:44px}
+.kbbody{padding:0 var(--s4) var(--s3);max-height:25dvh}
+.kbbody svg{width:100%;height:auto;max-height:calc(25dvh - 16px);display:block}
+.cmd{display:flex;flex-wrap:wrap;gap:var(--s3);align-items:center;padding:var(--s3) var(--s4);background:var(--surface-sunken);border-top:2px solid var(--border)}
+.cmd .sp{flex:1}
+.badge{display:inline-flex;gap:var(--s2);align-items:center;font-weight:600;font-size:18px;color:var(--record);border:2px solid currentColor;border-radius:999px;padding:var(--s1) var(--s3)}
+.badge.warn{color:var(--warning)}.num{font-variant-numeric:tabular-nums}
+.drawer{position:absolute;right:var(--s4);bottom:calc(100% - var(--s2));width:min(380px,calc(100% - 32px));background:var(--surface-raised);border:2px solid var(--border);border-radius:var(--radius);padding:var(--s4);box-shadow:0 6px 20px rgba(30,27,24,.18);z-index:5;display:flex;flex-direction:column;gap:var(--s3)}
+.drawer h2{margin:0;font-size:22px}
+.opt{display:flex;gap:var(--s3);align-items:center;justify-content:space-between;min-height:44px}
+.opt small{display:block;font-weight:500;color:var(--text-muted);font-size:16px}
+.cmdwrap{position:relative}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;background:var(--text);color:var(--surface);padding:var(--s3) var(--s4);border-radius:var(--radius);display:flex;gap:var(--s4);align-items:center;z-index:20;max-width:calc(100% - 32px)}
+.toast button{background:transparent;color:var(--surface);border-color:var(--surface)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* barre de prototype */
+.proto{position:fixed;left:0;right:0;bottom:0;height:64px;background:#2b2b2b;color:#fff;display:flex;gap:var(--s2);align-items:center;padding:0 var(--s3);z-index:30;overflow-x:auto;font:600 16px var(--font)}
+.proto *{font-size:16px}.proto b{background:#ffd54a;color:#000;padding:2px 8px;border-radius:4px;flex:none}
+.proto select,.proto button{min-height:44px;flex:none;background:#444;color:#fff;border-color:#888}
+.steps [data-step]{position:relative}
+.steps [data-step]::after{content:attr(data-step);position:absolute;top:-10px;left:-10px;z-index:9;width:26px;height:26px;border-radius:50%;background:#ffd54a;color:#000;font:700 15px/26px var(--font);text-align:center;border:2px solid #000}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:760px){.msg{font-size:32px}.bar .name{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="app" id="app" aria-label="Piano MIDI Visualizer">
+  <div id="bar"></div>
+  <div class="stage" id="stage"></div>
+  <div class="kb" id="kb"></div>
+  <div class="cmdwrap"><div id="drawer"></div><div class="cmd" id="cmd"></div></div>
+</div>
+<div class="sr" role="status" aria-live="polite" id="live"></div>
+<div id="toast"></div>
+<div class="proto" role="group" aria-label="Barre de prototype"><b>PROTOTYPE</b>
+ <label class="sr" for="preset">État</label>
+ <select id="preset">
+  <option value="idle">Avant activation</option><option value="requesting">Demande d'accès en cours</option>
+  <option value="unsupported">Navigateur incompatible</option><option value="insecure">Contexte non sécurisé</option>
+  <option value="denied">Accès refusé</option><option value="error">Échec inattendu</option>
+  <option value="multi">Plusieurs pianos (choix)</option><option value="ready">Prêt, rien joué</option>
+  <option value="play">Accord en cours + historique</option><option value="frozen">Défilement figé</option>
+  <option value="recording">Enregistrement en cours</option><option value="recready">Enregistrement prêt</option>
+  <option value="disconnected">Piano débranché</option><option value="interrupted">Enregistrement interrompu</option>
+ </select>
+ <button id="chord">Jouer un accord</button><button id="unplug">Débrancher / rebrancher</button><button id="steps" aria-pressed="false">Repères d'étapes</button>
+</div>
+<script>
+const FR=['Do','Ré','Mi','Fa','Sol','La','Si'];
+const LET_S=[0,0,1,1,2,3,3,4,4,5,5,6],LET_F=[0,1,1,2,2,3,4,4,5,5,6,6],ACC_S=[0,1,0,1,0,0,1,0,1,0,1,0],ACC_F=[0,-1,0,-1,0,0,-1,0,-1,0,-1,0];
+const CHORDS=[[60,64,67],[53,57,60,65],[66,70,73],[48,55,64],[62,65,69]];
+const $=id=>document.getElementById(id);
+let S,chordIdx=0,timer=null,idleTimer=null,lastAnnounce='';
+function fresh(){return{mode:'idle',online:true,piano:'Yamaha P-125',history:[],current:[],frozen:false,rec:{st:'none',secs:0,notes:0,dl:false},names:true,flats:false,keyboard:false,drawer:false,shortcuts:true,announce:true,cleared:null,empty:false}}
+S=fresh();
+function note(m){const pc=m%12,li=(S.flats?LET_F:LET_S)[pc],ac=(S.flats?ACC_F:ACC_S)[pc],oct=Math.floor(m/12)-1;return{li,ac,oct,dn:oct*7+li,name:FR[li]+(ac>0?'♯':ac<0?'♭':''),full:FR[li]+(ac>0?' dièse':ac<0?' bémol':'')+' '+oct}}
+function say(t){$('live').textContent='';setTimeout(()=>$('live').textContent=t,30)}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function staves(){const g=12,t1=40,t2=40+48+96;return{g,t1,t2,H:t2+48+56}}
+function scoreSVG(){
+ const {g,t1,t2,H}=staves(),W=1000;let o=`<svg viewBox="0 0 ${W} ${H}" aria-hidden="true" data-step="4">`;
+ for(const t of [t1,t2])for(let i=0;i<5;i++)o+=`<line x1="20" x2="${W-20}" y1="${t+i*g}" y2="${t+i*g}" stroke="var(--border)" stroke-width="2"/>`;
+ o+=`<text x="30" y="${t1+g*4+4}" font-size="62" fill="var(--text)">𝄞</text><text x="30" y="${t2+g*3+2}" font-size="48" fill="var(--text)">𝄢</text>`;
+ const items=[...S.history.map(c=>({c,cur:false})),...(S.current.length?[{c:S.current,cur:true}]:[])].slice(-8);
+ items.forEach((it,i)=>{const x=170+i*105;let lowTreble=false;
+  let ak=0;it.c.slice().sort((a,b)=>a-b).forEach(m=>{const n=note(m),tre=m>=60,top=tre?t1:t2,base=tre?30:18,steps=n.dn-base,y=top+4*g-steps*g/2;if(tre)lowTreble=true;
+   for(let s=-2;s>=steps;s-=2){const ly=top+4*g-s*g/2;o+=`<line x1="${x-20}" x2="${x+20}" y1="${ly}" y2="${ly}" stroke="var(--border)" stroke-width="2"/>`}
+   for(let s=10;s<=steps;s+=2){const ly=top+4*g-s*g/2;o+=`<line x1="${x-20}" x2="${x+20}" y1="${ly}" y2="${ly}" stroke="var(--border)" stroke-width="2"/>`}
+   if(n.ac){o+=`<text x="${x-34-(ak%3)*16}" y="${y+8}" font-size="24" fill="var(--text)">${n.ac>0?'♯':'♭'}</text>`;ak++}
+   o+=it.cur?`<ellipse cx="${x}" cy="${y}" rx="12" ry="9" fill="var(--primary)" stroke="var(--text)" stroke-width="3" transform="rotate(-18 ${x} ${y})"/>`:`<ellipse cx="${x}" cy="${y}" rx="10" ry="7.5" fill="var(--note-history)" transform="rotate(-18 ${x} ${y})"/>`});
+  if(it.cur&&S.names)o+=`<text x="${x+30}" y="${(lowTreble?t1+g*2:t2+g*2)+8}" font-size="22" font-weight="700" fill="var(--text)">${it.c.slice().sort((a,b)=>a-b).map(m=>note(m).name).join(' · ')}</text>`});
+ return o+'</svg>'}
+function chordText(c){const ns=c.slice().sort((a,b)=>a-b).map(m=>note(m).full);return ns.join(', ')}
+function kbSVG(){const lit=new Set(S.current);let o='<svg viewBox="0 0 630 100" aria-hidden="true">';let x=0;const whites=[];for(let m=48;m<84;m++){if(![1,3,6,8,10].includes(m%12))whites.push(m)}
+ whites.forEach((m,i)=>{o+=`<rect x="${i*30}" y="1" width="30" height="98" fill="${lit.has(m)?'var(--primary)':'var(--surface-raised)'}" stroke="var(--border)" stroke-width="2"/>`;});
+ whites.forEach((m,i)=>{if([0,2,5,7,9].includes(m%12)&&m+1<84){const b=m+1;o+=`<rect x="${i*30+20}" y="1" width="20" height="60" fill="${lit.has(b)?'var(--primary)':'var(--text)'}" stroke="var(--text)" stroke-width="2"/>`}});
+ return o+'</svg>'}
+function render(){
+ const m=S.mode,ready=m==='ready',live=ready&&S.online;
+ // barre MIDI
+ let bar='';
+ if(m==='idle'||m==='requesting'||m==='unsupported'||m==='insecure'||m==='denied'||m==='error')bar=`<div class="bar" data-step="2"><span class="dot wait" aria-hidden="true"></span><span class="name">Aucun piano</span></div>`;
+ else if(m==='multi')bar=`<div class="bar" data-step="2"><span class="dot wait" aria-hidden="true"></span><span class="name">Choisissez votre piano</span></div>`;
+ else bar=`<div class="bar" data-step="2"><span class="dot ${S.online?'':'off'}" aria-hidden="true"></span><span class="name" title="${S.piano}">${S.online?'Piano connecté : '+S.piano:'Aucun piano'}</span><button id="change">Changer</button></div>`;
+ $('bar').innerHTML=bar;
+ // scène
+ let st='';
+ if(m==='idle')st=`<div class="center">${scoreSVG()}<div class="msg">Activez le MIDI, puis jouez une note</div><button class="primary big" id="activate" data-step="1">Activer le MIDI</button></div>`;
+ else if(m==='requesting')st=`<div class="center">${scoreSVG()}<p role="status">Demande d'accès en cours…</p></div>`;
+ else if(m==='unsupported')st=`<div class="center"><p>Votre navigateur ne gère pas le MIDI. Essayez Chrome, Edge ou Opera.</p></div>`;
+ else if(m==='insecure')st=`<div class="center"><p>Le MIDI exige une connexion sécurisée (HTTPS). Ouvrez cette page en HTTPS, avec Chrome, Edge ou Opera.</p></div>`;
+ else if(m==='denied')st=`<div class="center"><p>L'accès au MIDI a été refusé. Autorisez-le dans les réglages du site (icône à côté de l'adresse), puis rechargez la page.</p></div>`;
+ else if(m==='error')st=`<div class="center"><p>Impossible d'activer le MIDI. Vérifiez votre piano puis réessayez.</p><button class="primary big" id="retry">Réessayer</button></div>`;
+ else if(m==='multi')st=`<div class="center" data-step="3"><div class="choose" role="radiogroup" aria-label="Piano"><label><input type="radio" name="p" value="Yamaha P-125"> Yamaha P-125</label><label><input type="radio" name="p" value="Roland FP-30X"> Roland FP-30X</label></div></div>`;
+ else{
+  let top='';
+  if(!S.online)top=`<div class="banner" role="status"><span aria-hidden="true">⚠</span> Piano débranché — rebranchez-le ou choisissez un autre piano<span class="sp"></span></div>`;
+  if(S.rec.st==='interrupted')top+=`<div class="banner warn"><span aria-hidden="true">!</span> Interrompu, ${S.rec.secs} s enregistrées</div>`;
+  const none=!S.history.length&&!S.current.length;
+  let desc=`<div class="sr" id="desc">${S.current.length?'Accord en cours : '+chordText(S.current):'Aucune note en cours.'} Historique : ${S.history.length} accord(s).</div>`;
+  st=`<div tabindex="0" role="group" aria-label="Partition" style="outline-offset:-6px">${top}${scoreSVG()}${none&&S.online?`<div class="msg sm">${S.empty?'Rien à enregistrer, jouez d\'abord':'Jouez une note, elle apparaît ici'}</div>`:''}${desc}</div>`}
+ $('stage').innerHTML=st;
+ // clavier visuel
+ $('kb').innerHTML=(live||(ready&&!S.online))?`<button id="kbh" aria-expanded="${S.keyboard}" aria-controls="kbb">${S.keyboard?'Masquer':'Afficher'} le clavier visuel</button>${S.keyboard?`<div class="kbbody" id="kbb">${kbSVG()}</div>`:''}`:'';
+ // commandes
+ const r=S.rec,isPl=ready,canRec=isPl&&S.online;
+ let c='';
+ if(isPl||m==='multi'||m==='idle'||m==='requesting'||m==='unsupported'||m==='insecure'||m==='denied'||m==='error'){
+  const ok=isPl;
+  if(r.st==='on')c+=`<button class="rec on" id="rec" data-step="8"><span aria-hidden="true">■</span> Arrêter l'enregistrement<kbd>R</kbd></button><span class="badge" role="timer" aria-label="Durée"><span aria-hidden="true">●</span> Enregistrement <span class="num">${fmt(r.secs)}</span></span>`;
+  else c+=`<button class="rec" id="rec" data-step="8" ${canRec?'':'disabled'}><span aria-hidden="true">●</span> ${r.st==='ready'||r.st==='interrupted'?'Nouvel enregistrement':'Enregistrer'}<kbd>R</kbd></button>`;
+  c+=`<button id="dl" data-step="9" ${(r.st==='ready'||r.st==='interrupted')?'':'disabled'}>Télécharger (.mid${(r.st==='ready'||r.st==='interrupted')?', '+r.secs+' s':''})</button>`;
+  c+=`<button id="freeze" data-step="6" aria-pressed="${S.frozen}" ${ok?'':'disabled'}>${S.frozen?'Reprendre le direct':'Figer'}<kbd>F</kbd></button>`;
+  c+=`<button id="clear" ${ok?'':'disabled'}>Effacer<kbd>E</kbd></button><span class="sp"></span>`;
+  c+=`<button id="opt" data-step="7" aria-expanded="${S.drawer}" ${ok||m==='idle'?'':'disabled'}>Options</button>`;
+  if(r.st==='none'&&S.empty&&ready)c+=`<span class="sr">Rien à enregistrer, jouez d'abord</span>`;
+ }
+ $('cmd').innerHTML=c;
+ // tiroir
+ $('drawer').innerHTML=S.drawer?`<div class="drawer" role="dialog" aria-label="Options"><h2>Options</h2>
+  <div class="opt"><span>Noms de notes<small>Do, Ré, Mi…</small></span><button id="o-names" aria-pressed="${S.names}">${S.names?'Activé':'Désactivé'}</button></div>
+  <div class="opt"><span>Altérations<small>Exemple : Fa♯ / Sol♭</small></span><button id="o-flats" aria-pressed="${S.flats}">${S.flats?'Bémols':'Dièses'}</button></div>
+  <div class="opt"><span>Clavier visuel</span><button id="o-kb" aria-pressed="${S.keyboard}">${S.keyboard?'Activé':'Désactivé'}</button></div>
+  <div class="opt"><span>Annonce après silence<small>Résumé vocal du dernier accord</small></span><button id="o-ann" aria-pressed="${S.announce}">${S.announce?'Activée':'Désactivée'}</button></div>
+  <div class="opt"><span>Raccourcis R, F, E, L</span><button id="o-sc" aria-pressed="${S.shortcuts}">${S.shortcuts?'Activés':'Désactivés'}</button></div>
+  <button id="o-close">Fermer</button></div>`:'';
+ wire();
+}
+function toast(msg,act,fn){const t=$('toast');t.innerHTML=`<div class="toast" role="status"><span>${msg}</span>${act?`<button id="t-act">${act}</button>`:''}</div>`;if(act)$('t-act').onclick=()=>{fn();t.innerHTML=''};clearTimeout(toast.t);toast.t=setTimeout(()=>t.innerHTML='',act?6000:3000)}
+function play(c){if(S.mode!=='ready'||!S.online)return;if(S.frozen){return}
+ if(S.current.length)S.history.push(S.current);S.current=c.slice();if(S.history.length>40)S.history.shift();
+ if(S.rec.st==='on')S.rec.notes+=c.length;render();
+ clearTimeout(idleTimer);idleTimer=setTimeout(()=>{if(S.current.length){S.history.push(S.current);lastAnnounce='Accord : '+chordText(S.current);S.current=[];render();if(S.announce)say(lastAnnounce)}},2000)}
+function startTimer(){clearInterval(timer);timer=setInterval(()=>{if(S.rec.st==='on'){S.rec.secs++;const b=document.querySelector('.badge .num');if(b)b.textContent=fmt(S.rec.secs)}},1000)}
+function toggleRec(){const r=S.rec;
+ if(r.st==='on'){if(r.notes>0){r.st='ready';say('Enregistrement terminé, '+r.notes+' notes. Télécharger disponible.')}else{r.st='none';S.empty=true;say('Rien à enregistrer, jouez d\'abord')}render();return}
+ if((r.st==='ready'||r.st==='interrupted')&&!r.dl){toast('L\'enregistrement actuel n\'a pas été téléchargé et sera perdu.','Remplacer',()=>{S.rec={st:'on',secs:0,notes:0,dl:false};S.empty=false;say('Enregistrement démarré');startTimer();render()});return}
+ S.rec={st:'on',secs:0,notes:0,dl:false};S.empty=false;say('Enregistrement démarré');startTimer();render()}
+function setOnline(v){S.online=v;if(!v){S.current=[];if(S.rec.st==='on'){S.rec.st='interrupted'}say('Piano débranché — rebranchez-le ou choisissez un autre piano')}else say('Piano connecté : '+S.piano);render()}
+function wire(){
+ const on=(id,fn)=>{const e=$(id);if(e)e.onclick=fn};
+ on('activate',()=>{S.mode='requesting';render();setTimeout(()=>{S.mode='ready';say('Piano connecté : '+S.piano);render()},900)});
+ on('retry',()=>{S.mode='requesting';render();setTimeout(()=>{S.mode='ready';render()},700)});
+ on('change',()=>{S.mode='multi';render()});
+ document.querySelectorAll('input[name=p]').forEach(i=>i.onchange=()=>{S.piano=i.value;S.mode='ready';S.online=true;say('Piano connecté : '+S.piano);render();$('change')&&$('change').focus()});
+ on('rec',toggleRec);
+ on('dl',()=>{S.rec.dl=true;toast('Fichier enregistré : seance.mid ('+S.rec.secs+' s). L\'enregistrement reste disponible.');say('Fichier enregistré')});
+ on('freeze',()=>{S.frozen=!S.frozen;render();$('freeze').focus()});
+ on('clear',()=>{const h=S.history,c=S.current;S.history=[];S.current=[];render();toast('Partition effacée','Annuler',()=>{S.history=h;S.current=c;render()})});
+ on('opt',()=>{S.drawer=!S.drawer;render();($('o-close')||$('opt')).focus()});
+ on('o-close',()=>{S.drawer=false;render();$('opt').focus()});
+ on('kbh',()=>{S.keyboard=!S.keyboard;render();$('kbh').focus()});
+ const tg=(id,k)=>on(id,()=>{S[k]=!S[k];render();$(id).focus()});
+ tg('o-names','names');tg('o-flats','flats');tg('o-kb','keyboard');tg('o-ann','announce');tg('o-sc','shortcuts')}
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&S.drawer){S.drawer=false;render();$('opt')&&$('opt').focus();return}
+ if(!S.shortcuts||S.mode!=='ready'||e.ctrlKey||e.metaKey||e.altKey||/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))return;
+ const k=e.key.toLowerCase();
+ if(k==='r'&&$('rec')&&!$('rec').disabled){e.preventDefault();toggleRec();$('rec')&&$('rec').focus({preventScroll:true})}
+ else if(k==='f'&&$('freeze')&&!$('freeze').disabled){e.preventDefault();$('freeze').click()}
+ else if(k==='e'&&$('clear')&&!$('clear').disabled){e.preventDefault();$('clear').click()}
+ else if(k==='l'){e.preventDefault();const t=S.current.length?'Accord : '+chordText(S.current):(S.history.length?'Accord : '+chordText(S.history[S.history.length-1]):'Aucune note jouée');say(t);toast(t)}});
+// barre de prototype
+function preset(p){clearTimeout(idleTimer);S=fresh();const hist=[[60,64,67],[65,69,72],[62,67,71],[64,67,72]];
+ const ready=()=>{S.mode='ready'};
+ if(p==='requesting')S.mode='requesting';else if(['unsupported','insecure','denied','error','multi'].includes(p))S.mode=p;
+ else if(p!=='idle'){ready();
+  if(p==='play'){S.history=hist.slice();S.current=[60,64,67]}
+  if(p==='frozen'){S.history=hist.slice();S.current=[60,64,67];S.frozen=true}
+  if(p==='recording'){S.history=hist.slice();S.current=[60,64,67];S.rec={st:'on',secs:42,notes:12,dl:false};startTimer()}
+  if(p==='recready'){S.history=hist.slice();S.rec={st:'ready',secs:42,notes:12,dl:false}}
+  if(p==='disconnected'){S.history=hist.slice();S.online=false}
+  if(p==='interrupted'){S.history=hist.slice();S.online=false;S.rec={st:'interrupted',secs:27,notes:9,dl:false}}}
+ render()}
+$('preset').onchange=e=>preset(e.target.value);
+$('chord').onclick=()=>{if(S.mode!=='ready'){preset('ready');$('preset').value='ready'}play(CHORDS[chordIdx++%CHORDS.length])};
+$('unplug').onclick=()=>{if(S.mode!=='ready'){preset('ready');$('preset').value='ready'}setOnline(!S.online)};
+$('steps').onclick=e=>{const v=e.target.getAttribute('aria-pressed')!=='true';e.target.setAttribute('aria-pressed',v);document.body.classList.toggle('steps',v)};
+render();
+</script>
+</body>
+</html>

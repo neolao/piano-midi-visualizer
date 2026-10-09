@@ -2,7 +2,7 @@
 slug: jouer-partition
 title: Jouer et voir sa partition
 flow: 001
-status: designed
+status: validated
 source: src/main.ts, src/midi-panel.ts (état d'accès uniquement ; le reste à réaliser)
 ---
 
@@ -17,9 +17,9 @@ Voir en direct ce qu'on joue sur une partition, le relire, et l'enregistrer.
 De haut en bas, en colonne unique sur toute la hauteur de la fenêtre (`100dvh`), sans défilement de la page :
 
 1. **Barre MIDI** (fine) : pastille d'état + nom du piano (≥ 18 px) + « Changer ». Nom tronqué avec ellipse et titre complet si la largeur manque. Avant l'activation, cet espace est remplacé par le panneau d'accès existant.
-2. **Partition** (≥ 60 % de la hauteur, toute la largeur) : deux portées (sol et fa), au moins 40 à 48 px par portée, échelle jamais réduite ; si la place manque, la région défile. Région focalisable et nommée. Note en cours en accent, historique atténué (contraste ≥ 4,5:1).
+2. **Partition** (≥ 60 % de la hauteur, toute la largeur) : deux portées (sol et fa), au moins 40 à 48 px par portée, échelle jamais réduite ; si la place manque, la région défile. Région focalisable et nommée. Note en cours en accent avec contour épais, historique atténué (contraste ≥ 4,5:1) ; les noms de notes de l'accord en cours s'affichent à sa droite sur une ligne (« Do · Mi · Sol »), jamais empilés.
 3. **Clavier visuel** (replié par défaut) : poignée d'au moins 44 px ; déplié, au plus 25 % de la hauteur, la partition défile plutôt que de se réduire.
-4. **Barre de commandes** : trois grands contrôles (Enregistrer/Arrêter, Figer/Reprendre le direct, Effacer) et « Options » qui ouvre le tiroir (noms de notes, dièses/bémols, clavier visuel, annonce après silence, raccourcis). Cibles ≥ 44×44 px, 8 px d'écart. Au plus 6 contrôles visibles hors partition.
+4. **Barre de commandes** : Enregistrer/Arrêter (devient « Nouvel enregistrement » une fois un enregistrement prêt), Télécharger (.mid, durée ; désactivé et visible tant qu'il n'y a rien), Figer/Reprendre le direct, Effacer, puis « Options » qui ouvre le tiroir (noms de notes, dièses/bémols, clavier visuel, annonce après silence, raccourcis). Cibles ≥ 44×44 px, 8 px d'écart. Cinq contrôles visibles hors partition (le compteur d'enregistrement n'en est pas un).
 
 Tablette (1024 à 768 px de large, paysage) : même hiérarchie ; le tiroir recouvre le bas de l'écran sans réduire la partition.
 
@@ -37,7 +37,7 @@ Tablette (1024 à 768 px de large, paysage) : même hiérarchie ; le tiroir reco
 | Error (accès refusé / non compatible / échec) | voir le flux 001 | messages existants avec marche à suivre ; « Réessayer » uniquement pour l'échec | selon le cas |
 | Error (piano débranché) | câble retiré | partition conservée, notes tenues relâchées, « Piano débranché — rebranchez ou choisissez un autre piano » | Rebrancher / Changer |
 | Enregistrement vide | aucune note enregistrée | « Rien à enregistrer, jouez d'abord », téléchargement désactivé et visible | Jouer |
-| Enregistrement en cours | clic sur Enregistrer | indicateur texte + icône + durée (pas la couleur seule) | Arrêter |
+| Enregistrement en cours | clic sur Enregistrer | bouton plein « Arrêter l'enregistrement », badge texte + icône + durée (pas la couleur seule) | Arrêter |
 | Enregistrement interrompu | piano débranché pendant l'enregistrement | « Interrompu, X s enregistrées », contenu conservé | Télécharger |
 | Défilement figé | clic sur Figer | partition immobile, « Reprendre le direct » | Reprendre |
 
@@ -54,6 +54,7 @@ Tablette (1024 à 768 px de large, paysage) : même hiérarchie ; le tiroir reco
 | Noms de notes / Bémols / Clavier visuel | bascule | applique à toute la partition, réglage mémorisé | rendu immédiat, `aria-pressed` |
 | Lire la dernière note | touche L | annonce le dernier accord | zone d'annonce |
 | Télécharger | clic / Entrée | fichier .mid | annonce « Fichier enregistré » ; l'enregistrement reste |
+| Nouvel enregistrement | clic / R | si l'enregistrement actuel n'est pas téléchargé : toast « L'enregistrement actuel n'a pas été téléchargé et sera perdu. » avec action « Remplacer » ; sinon démarre | toast, 6 s |
 
 Raccourcis d'une touche (R, F, E, L) : affichés à l'écran, désactivables, inactifs dans un champ de saisie, sans conflit avec le navigateur.
 
@@ -82,6 +83,7 @@ Raccourcis d'une touche (R, F, E, L) : affichés à l'écran, désactivables, in
 ## Accessibility
 
 - **Keyboard order:** Barre MIDI (Changer) → partition (région focalisable) → clavier visuel (poignée) → Enregistrer → Figer → Effacer → Options. Focus visible ≥ 3:1, jamais masqué (WCAG 2.4.11).
+- **Choix du piano :** « Changer » ouvre un choix par boutons radio ; la sélection l'applique et rend le focus à « Changer ».
 - **Focus after each action:** après Enregistrer, Arrêter, Figer et Télécharger, le focus reste sur le bouton déclencheur, qui garde son nom et son état. Aucun déplacement de focus pendant que des notes arrivent.
 - **Announcements (live regions / screen reader):** zone polie réservée aux changements d'état (connexion, débranchement, enregistrement démarré/arrêté, fichier enregistré). Jamais d'annonce note par note ; un résumé poli environ 2 s après l'arrêt du jeu, réglable ; touche L pour le relire. La partition SVG est `aria-hidden`, doublée d'une description textuelle de l'accord courant et d'une liste de l'historique accessible au clavier. Le clavier visuel est décoratif et `aria-hidden`.
 - **Contrast & targets:** texte ≥ 4,5:1 ; portées, notes et contours des touches ≥ 3:1 ; cibles ≥ 44 px (jamais < 24 px) ; la note en cours n'est jamais signalée par la couleur seule (forme ou épaisseur en plus) ; thèmes clair et sombre à trancher dans `/ux:style`.

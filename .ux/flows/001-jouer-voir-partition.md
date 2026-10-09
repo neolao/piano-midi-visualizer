@@ -1,7 +1,7 @@
 ---
 id: 001
 title: Jouer et voir sa partition en direct
-status: designed
+status: validated
 date: 2026-10-09
 job: Quand je m'entraîne au piano, je veux voir en direct sur une partition ce que je joue, afin de vérifier mes notes.
 screens: [jouer-partition]
@@ -17,7 +17,7 @@ Le pianiste amateur ouvre la page, l'écran posé sur le piano, pour voir ce qu'
 
 ## Chosen approach
 
-Un seul écran en scène unique : une barre MIDI fine en haut (pastille d'état, nom du piano, changer), la partition à deux portées dominante au milieu, une barre de commandes basse à trois grands contrôles (Enregistrer, Figer, Effacer) et un tiroir d'options (noms de notes, dièses/bémols, clavier visuel). Tout est utilisable au clavier d'ordinateur avec des raccourcis d'une touche, parce que la souris est hors de portée en jouant. Le panneau d'accès MIDI déjà réalisé devient l'état « avant connexion » de la barre MIDI.
+Un seul écran en scène unique : une barre MIDI fine en haut (pastille d'état, nom du piano, changer), la partition à deux portées dominante au milieu, une barre de commandes basse (Enregistrer, Télécharger, Figer, Effacer) et un tiroir d'options (noms de notes, dièses/bémols, clavier visuel). Tout est utilisable au clavier d'ordinateur avec des raccourcis d'une touche, parce que la souris est hors de portée en jouant. Le panneau d'accès MIDI déjà réalisé devient l'état « avant connexion » de la barre MIDI.
 
 ## Flow
 

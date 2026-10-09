@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-09
+
 ### Fixed
 
 - Les textes du panneau Options ne se chevauchent plus sur un écran peu haut, et la barre de boutons du bas tient sur une seule ligne sur tablette : les boutons Métronome et Plein écran gardent un libellé court et s'affichent en bleu plein quand ils sont actifs.
@@ -56,7 +58,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 - Les utilisateurs peuvent activer le MIDI d'un clic et voir la liste de leurs pianos branchés, mise à jour à chaud, avec des messages clairs si le navigateur est incompatible, si l'accès est refusé ou en cas d'échec.
 
-[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/neolao/piano-midi-visualizer/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.3.1...v0.4.0

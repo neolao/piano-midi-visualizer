@@ -1,0 +1,24 @@
+{
+	"name": "piano-midi-visualizer",
+	"version": "0.1.0",
+	"description": "Page web statique qui capture un piano MIDI et affiche les notes sur une partition en direct",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc --noEmit && vite build",
+		"preview": "vite preview",
+		"test": "vitest run",
+		"lint": "biome check --write ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.15",
+		"jsdom": "^29.1.1",
+		"typescript": "^7.0.2",
+		"vite": "^8.3.4",
+		"vitest": "^5.0.3"
+	},
+	"dependencies": {
+		"vexflow": "^5.0.0"
+	}
+}

@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-09
+
 ### Fixed
 
 - Les clés de sol et de fa restent visibles à gauche de la partition quand elle défile sur un écran étroit.
@@ -31,7 +33,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 - Les utilisateurs peuvent activer le MIDI d'un clic et voir la liste de leurs pianos branchés, mise à jour à chaud, avec des messages clairs si le navigateur est incompatible, si l'accès est refusé ou en cas d'échec.
 
-[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/neolao/piano-midi-visualizer/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/neolao/piano-midi-visualizer/releases/tag/v0.1.0

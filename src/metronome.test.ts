@@ -125,4 +125,25 @@ describe("createMetronome", () => {
 		expect(result).toEqual({ sound: false });
 		expect(beats.length).toBeGreaterThan(0);
 	});
+
+	it("repart sur un temps accentué quand le nombre de temps par mesure change", async () => {
+		const { metronome, clicks, beats } = setup();
+		metronome.setRhythm({ beats: 4, tempo: 60 });
+		await metronome.start();
+		await vi.advanceTimersByTimeAsync(1500);
+		metronome.setRhythm({ beats: 3, tempo: 60 });
+		await vi.advanceTimersByTimeAsync(1000);
+		expect(beats.slice(-1)).toEqual([0]);
+		expect(clicks.at(-1)?.accent).toBe(true);
+	});
+
+	it("garde le même fil de temps quand seul le tempo change", async () => {
+		const { metronome, beats } = setup();
+		metronome.setRhythm({ beats: 4, tempo: 60 });
+		await metronome.start();
+		await vi.advanceTimersByTimeAsync(1500);
+		metronome.setRhythm({ beats: 4, tempo: 120 });
+		await vi.advanceTimersByTimeAsync(1500);
+		expect(beats.slice(0, 4)).toEqual([0, 1, 2, 3]);
+	});
 });

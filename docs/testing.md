@@ -12,7 +12,7 @@
 | `staff.test.ts` | Clé, altération, noms, clés VexFlow, bornes. |
 | `describe.test.ts`, `settings.test.ts` | Descriptions pour lecteurs d'écran ; réglages et stockage indisponible. |
 | `midi-access.test.ts` | États d'accès, refus, échec et réessai, branchement à chaud, réception des notes, choix du piano. |
-| `rhythm.test.ts`, `metronome.test.ts`, `fullscreen.test.ts` | Arrondi des durées, mesures, tempo ; clics, accent, arrêt, son coupé ou refusé ; plein écran. |
+| `rhythm.test.ts`, `metronome.test.ts`, `grid.test.ts`, `timeline.test.ts`, `fullscreen.test.ts` | Arrondi des durées, mesures, tempo ; clics, accent, arrêt, son coupé ou refusé ; grille de temps et partition qui défile (position, défilement, mouvement réduit) ; plein écran. |
 | `midi-panel.test.ts` | Barre MIDI, liste de choix du piano et scène d'état. |
 | `app.test.ts` | Assemblage : Figer, Effacer et annuler, tiroir d'options, raccourcis, annonces (le rendu VexFlow est simulé). |
 | `scripts/check-dist.test.ts` | Détection des chemins absolus qui casseraient GitHub Pages ; site installable (fiche, icônes, lien dans la page). |

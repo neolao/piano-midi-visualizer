@@ -73,6 +73,7 @@ export function createMetronome(
 			pending = [];
 		},
 		setRhythm(rhythm) {
+			if (rhythm.beats !== beats) index = 0;
 			beats = rhythm.beats;
 			tempo = rhythm.tempo;
 		},

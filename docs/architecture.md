@@ -15,6 +15,8 @@ La page est écrite en TypeScript sans framework. La logique pure est séparée 
 | `staff.ts` | Place une note sur la portée (clé, altération, nom français, clé VexFlow). |
 | `score.ts` | Dessine les deux portées avec VexFlow (8 accords visibles), l'indication de mesure, les barres de mesure et les durées. |
 | `rhythm.ts` | Mesures, tempo, arrondi d'une durée de maintien en valeur de note, découpage en mesures. |
+| `grid.ts` | Grille de temps du métronome : convertit un instant en temps, suit les changements de tempo et de mesure, donne les barres de mesure. |
+| `timeline.ts` | Partition qui défile : curseur fixe, barres de mesure et temps, notes placées selon le moment où elles ont été jouées ; dessinée une fois puis déplacée par le navigateur. |
 | `fullscreen.ts` | Plein écran du navigateur (bouton et touche P), injecté pour les tests. |
 | `metronome.ts` | Métronome : clics planifiés à l'avance sur l'horloge audio, temps affiché à l'heure du clic. |
 | `describe.ts` | Décrit les accords en toutes lettres pour les lecteurs d'écran. |
@@ -31,6 +33,9 @@ flowchart LR
   Accords --> Description[describe]
   Rythme[rhythm] --> Partition
   Metronome[metronome] --> App
+  Grille[grid] --> Defilement[timeline]
+  Accords --> Defilement
+  App --> Grille
   Reglages[settings] --> App[app]
   App --> Panneau
   App --> Partition
@@ -43,4 +48,5 @@ flowchart LR
 - Le DOM est construit avec `textContent` uniquement, jamais de HTML brut.
 - Les styles passent par des variables CSS (`src/styles/tokens.css`) ; `score.ts` les lit pour colorer le SVG.
 - Le métronome programme ses clics sur l'horloge audio du navigateur (voir `.vibe/decisions/001-rythme-simplifie-et-metronome-planifie.md`).
+- La partition qui défile n'est dessinée qu'à l'arrivée d'une note ou quand elle est presque épuisée ; entre-temps le navigateur déplace le calque (voir `.vibe/decisions/002-partition-defilante-sur-grille-de-temps.md`).
 - Le rendu de la partition est regroupé par image d'affichage (`requestAnimationFrame`), pas un rendu par message MIDI.

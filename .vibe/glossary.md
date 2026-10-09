@@ -36,3 +36,6 @@ _Sources: `src/rhythm.ts`, `src/metronome.ts`_
 Valeur de note (de la double croche à la ronde) la plus proche du temps pendant lequel la touche est tenue, selon le tempo. Il n'y a ni silence ni liaison ; un accord encore tenu s'affiche en noire.
 _Sources: `src/rhythm.ts`, `src/score.ts`_
 
+## Temps présent
+Pendant que le métronome tourne, instant que marque le curseur fixe de la partition : la partition défile vers la gauche d'un temps par battement, et une note se place à l'endroit de la mesure où elle a été jouée. Métronome arrêté, il n'y a pas de temps présent et la partition reste fixe.
+_Sources: `src/grid.ts`, `src/timeline.ts`_

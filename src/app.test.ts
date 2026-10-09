@@ -13,6 +13,22 @@ vi.mock("./score", () => ({
 	}),
 }));
 
+const timelineShows: {
+	snapshot: unknown;
+	view: { grid: unknown; nowMs: () => number };
+}[] = [];
+let timelineStops = 0;
+vi.mock("./timeline", () => ({
+	createTimeline: () => ({
+		show: (snapshot: unknown, view: { grid: unknown; nowMs: () => number }) =>
+			timelineShows.push({ snapshot, view }),
+		sync: () => {},
+		stop: () => {
+			timelineStops++;
+		},
+	}),
+}));
+
 let root: HTMLElement;
 let piano: MidiInputLike;
 let access: MidiAccessLike;
@@ -75,6 +91,8 @@ beforeEach(() => {
 	document.body.innerHTML = '<div id="app"></div>';
 	root = document.querySelector("#app") as HTMLElement;
 	renders.length = 0;
+	timelineShows.length = 0;
+	timelineStops = 0;
 	vi.useRealTimers();
 });
 
@@ -680,6 +698,86 @@ describe("mountApp", () => {
 			await wait(60);
 			expect(said()).toContain("Le navigateur n'a pas autorisé le plein écran");
 			expect(pressed("Plein écran")).toBe("false");
+		});
+	});
+
+	describe("partition qui défile", () => {
+		const player: ClickPlayer = {
+			now: () => Date.now() / 1000,
+			click: () => {},
+			resume: async () => true,
+		};
+		const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+		const startMetronome = async () => {
+			buttonByText("Métronome").click();
+			await wait(250);
+			await flush();
+		};
+
+		it("garde la partition fixe tant que le métronome est arrêté", async () => {
+			boot(memoryStorage(), () => 0, player);
+			buttonByText("Activer le MIDI").click();
+			await flush();
+			send(0x90, 60, 100);
+			await flush();
+			expect(timelineShows).toHaveLength(0);
+			expect(renders.length).toBeGreaterThan(0);
+		});
+
+		it("fait défiler la partition dès le premier temps du métronome", async () => {
+			boot(memoryStorage(), () => 0, player);
+			await startMetronome();
+			expect(timelineShows.length).toBeGreaterThan(0);
+			const grid = timelineShows.at(-1)?.view.grid as
+				| { active: boolean }
+				| undefined;
+			expect(grid?.active).toBe(true);
+			expect(root.querySelector<HTMLElement>(".timeline")?.hidden).toBe(false);
+		});
+
+		it("revient à la partition fixe quand le métronome s'arrête", async () => {
+			boot(memoryStorage(), () => 0, player);
+			await startMetronome();
+			const before = renders.length;
+			buttonByText("Métronome").click();
+			await flush();
+			expect(timelineStops).toBeGreaterThan(0);
+			expect(renders.length).toBeGreaterThan(before);
+			expect(root.querySelector<HTMLElement>(".timeline")?.hidden).toBe(true);
+		});
+
+		it("règle la grille sur le tempo choisi et suit un changement de tempo", async () => {
+			let t = 0;
+			boot(memoryStorage(), () => t, player);
+			buttonByText("Options").click();
+			const input = root.querySelector(
+				'input[data-rhythm="tempo"]',
+			) as HTMLInputElement;
+			input.value = "60";
+			input.dispatchEvent(new Event("change"));
+			await startMetronome();
+			const grid = timelineShows.at(-1)?.view.grid as {
+				beatAt: (ms: number) => number;
+			};
+			expect(grid.beatAt(2000) - grid.beatAt(0)).toBeCloseTo(2, 5);
+			t = 1000;
+			input.value = "120";
+			input.dispatchEvent(new Event("change"));
+			expect(grid.beatAt(1000) - grid.beatAt(0)).toBeCloseTo(1, 5);
+			expect(grid.beatAt(2000) - grid.beatAt(1000)).toBeCloseTo(2, 5);
+		});
+
+		it("fige le temps affiché quand on fige l'historique", async () => {
+			let t = 5000;
+			boot(memoryStorage(), () => t, player);
+			buttonByText("Activer le MIDI").click();
+			await flush();
+			await startMetronome();
+			buttonByText("Figer").click();
+			t = 9000;
+			await flush();
+			const view = timelineShows.at(-1)?.view;
+			expect(view?.nowMs()).toBe(5000);
 		});
 	});
 });

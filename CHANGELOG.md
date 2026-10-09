@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Quand le métronome tourne, la partition défile au rythme du tempo : un trait fixe marque le temps présent, les barres de mesure et les temps défilent, et chaque note se place à l'endroit de la mesure où elle a été jouée, donc les espaces montrent le rythme réel. Le défilement s'arrête avec Figer ; métronome arrêté, la partition redevient fixe.
+
 ## [0.6.1] - 2026-10-09
 
 ### Fixed

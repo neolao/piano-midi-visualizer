@@ -34,21 +34,80 @@ export interface Score {
 	render(snapshot: ChordSnapshot, options: ScoreOptions): void;
 }
 
-const WIDTH = 1000;
-const LINE_GAP = 12;
+export const WIDTH = 1000;
+export const LINE_GAP = 12;
 /** Épaisseur des portées : `--border-width` (2 px). */
-const LINE_WIDTH = 2;
+export const LINE_WIDTH = 2;
 /** Contour de la note en cours : 3 px (.ux/style.md). */
 const CURRENT_STROKE = 3;
-const TREBLE_Y = 0;
-const BASS_Y = 130;
-const HEIGHT = 270;
+export const TREBLE_Y = 0;
+export const BASS_Y = 130;
+export const HEIGHT = 270;
 
-function token(name: string): string {
+export function token(name: string): string {
 	return (
 		getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||
 		"currentColor"
 	);
+}
+
+export interface ScoreColors {
+	line: string;
+	text: string;
+	history: string;
+	current: string;
+	background: string;
+	font: string;
+}
+
+export function scoreColors(): ScoreColors {
+	return {
+		line: token("--color-border"),
+		text: token("--color-text"),
+		history: token("--color-note-history"),
+		current: token("--color-primary"),
+		background: token("--color-surface-raised"),
+		font: token("--font-ui"),
+	};
+}
+
+/** Note (ou accord) d'une clé : null quand l'accord n'a aucune note dans cette clé. */
+export function buildChordNote(
+	clef: "treble" | "bass",
+	chord: number[],
+	isCurrent: boolean,
+	value: NoteValue,
+	flats: boolean,
+	colors: ScoreColors,
+): StaveNote | null {
+	const inClef = [...chord]
+		.sort((a, b) => a - b)
+		.map((m) => placeNote(m, flats))
+		.filter((n) => n.clef === clef);
+	if (inClef.length === 0) return null;
+	const style = isCurrent
+		? {
+				fillStyle: colors.current,
+				strokeStyle: colors.text,
+				lineWidth: CURRENT_STROKE,
+			}
+		: { fillStyle: colors.history, strokeStyle: colors.history };
+	const note = new StaveNote({
+		keys: inClef.map((n) => n.vexKey),
+		duration: value.vex,
+		clef,
+	});
+	if (value.vex.endsWith("d")) {
+		Dot.buildAndAttach([note], { all: true });
+	}
+	inClef.forEach((n, i) => {
+		if (n.accidental === 0) return;
+		const accidental = new Accidental(n.accidental > 0 ? "#" : "b");
+		accidental.setStyle(style);
+		note.addModifier(accidental, i);
+	});
+	note.setStyle(style);
+	return note;
 }
 
 /**
@@ -83,14 +142,7 @@ function pinClefs(
 export function createScore(container: HTMLElement): Score {
 	return {
 		render(snapshot, options) {
-			const colors = {
-				line: token("--color-border"),
-				text: token("--color-text"),
-				history: token("--color-note-history"),
-				current: token("--color-primary"),
-				background: token("--color-surface-raised"),
-				font: token("--font-ui"),
-			};
+			const colors = scoreColors();
 			const hasCurrent = snapshot.current.length > 0;
 			const values: NoteValue[] = snapshot.history.map((_, i) =>
 				quantizeDuration(
@@ -159,36 +211,9 @@ export function createScore(container: HTMLElement): Score {
 				chord: number[],
 				isCurrent: boolean,
 				value: NoteValue,
-			) => {
-				const placed = [...chord]
-					.sort((a, b) => a - b)
-					.map((m) => placeNote(m, options.flats));
-				const inClef = placed.filter((n) => n.clef === clef);
-				if (inClef.length === 0) return new GhostNote({ duration: value.vex });
-				const style = isCurrent
-					? {
-							fillStyle: colors.current,
-							strokeStyle: colors.text,
-							lineWidth: CURRENT_STROKE,
-						}
-					: { fillStyle: colors.history, strokeStyle: colors.history };
-				const note = new StaveNote({
-					keys: inClef.map((n) => n.vexKey),
-					duration: value.vex,
-					clef,
-				});
-				if (value.vex.endsWith("d")) {
-					Dot.buildAndAttach([note], { all: true });
-				}
-				inClef.forEach((n, i) => {
-					if (n.accidental === 0) return;
-					const accidental = new Accidental(n.accidental > 0 ? "#" : "b");
-					accidental.setStyle(style);
-					note.addModifier(accidental, i);
-				});
-				note.setStyle(style);
-				return note;
-			};
+			) =>
+				buildChordNote(clef, chord, isCurrent, value, options.flats, colors) ??
+				new GhostNote({ duration: value.vex });
 
 			type Tickable = StaveNote | GhostNote | BarNote;
 			const trebleNotes: Tickable[] = [];

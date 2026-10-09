@@ -214,6 +214,54 @@ kbd {
 	width: calc(max(1000px, 100cqw) * var(--clef-ratio));
 }
 
+.timeline {
+	position: relative;
+	height: 270px;
+	overflow: hidden;
+}
+
+.timeline[hidden] {
+	display: none;
+}
+
+.timeline-head {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 2;
+}
+
+.timeline-head svg,
+.timeline-track svg {
+	display: block;
+	max-width: none;
+}
+
+.timeline-view {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	overflow: hidden;
+}
+
+.timeline-track {
+	position: absolute;
+	top: 0;
+	left: 0;
+	will-change: transform;
+}
+
+.timeline-cursor {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 3;
+	width: 3px;
+	margin-left: -1px;
+	background: var(--color-primary);
+}
+
 .cmdwrap {
 	position: relative;
 }
@@ -335,20 +383,25 @@ kbd {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: var(--target-size);
-	height: var(--target-size);
-	border: var(--border-width) solid var(--color-border);
+	min-width: 30px;
+	height: 30px;
+	margin-left: var(--space-2);
+	border: var(--border-width) solid var(--color-surface-raised);
 	border-radius: 50%;
 	background: var(--color-surface-raised);
-	font: 600 var(--text-lg) var(--font-ui);
+	color: var(--color-text);
+	font: 600 var(--text-base) var(--font-ui);
 	font-variant-numeric: tabular-nums;
 }
 
 .beat[data-accent="true"] {
-	border-radius: var(--radius-control);
-	border-color: var(--color-primary);
-	background: var(--color-primary);
-	color: var(--color-on-primary);
+	border-radius: 6px;
+	background: var(--color-on-primary);
+	color: var(--color-primary);
+}
+
+.cmd button:has(.beat[data-on]) kbd {
+	display: none;
 }
 
 .beat:empty {

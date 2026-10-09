@@ -5,6 +5,10 @@ export interface ChordSnapshot {
 	history: number[][];
 	/** Durée de maintien (ms) de chaque accord de l'historique. */
 	durations: number[];
+	/** Instant (ms) où chaque accord de l'historique a commencé. */
+	starts: number[];
+	/** Instant où l'accord en cours a commencé, ou null s'il n'y en a pas. */
+	currentStart: number | null;
 }
 
 export interface ChordTracker {
@@ -31,6 +35,7 @@ export function createChordTracker({
 	let current: number[] = [];
 	let history: number[][] = [];
 	let durations: number[] = [];
+	let starts: number[] = [];
 	let chordStart = 0;
 
 	const closeCurrent = (end: number) => {
@@ -39,6 +44,7 @@ export function createChordTracker({
 		durations = [...durations, Math.max(0, end - chordStart)].slice(
 			-maxHistory,
 		);
+		starts = [...starts, chordStart].slice(-maxHistory);
 		current = [];
 	};
 
@@ -46,6 +52,8 @@ export function createChordTracker({
 		current: [...current],
 		history: history.map((c) => [...c]),
 		durations: [...durations],
+		starts: [...starts],
+		currentStart: current.length > 0 ? chordStart : null,
 	});
 
 	const sorted = (notes: number[]) => [...notes].sort((a, b) => a - b);
@@ -77,12 +85,15 @@ export function createChordTracker({
 			current = [];
 			history = [];
 			durations = [];
+			starts = [];
 			return before;
 		},
 		restore(snapshot) {
 			current = [...snapshot.current];
 			history = snapshot.history.map((c) => [...c]);
 			durations = [...snapshot.durations];
+			starts = [...snapshot.starts];
+			if (snapshot.currentStart !== null) chordStart = snapshot.currentStart;
 		},
 		get heldCount() {
 			return held.size;

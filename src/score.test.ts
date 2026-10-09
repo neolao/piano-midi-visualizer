@@ -14,7 +14,18 @@ const options = {
 	signature: "4/4" as const,
 	tempo: 60,
 };
-const empty = { current: [], history: [], durations: [] };
+const snap = (
+	current: number[],
+	history: number[][] = [],
+	durations: number[] = [],
+) => ({
+	current,
+	history,
+	durations,
+	starts: history.map((_, i) => i * 1000),
+	currentStart: current.length > 0 ? history.length * 1000 : null,
+});
+const empty = snap([]);
 
 describe("createScore — clés fixes", () => {
 	it("ajoute une copie fixe des clés qui ne montre que le bord gauche de la portée", () => {
@@ -32,10 +43,7 @@ describe("createScore — clés fixes", () => {
 	it("garde une seule copie des clés après plusieurs rendus", () => {
 		const score = createScore(host);
 		score.render(empty, options);
-		score.render(
-			{ current: [60], history: [[64]], durations: [1000] },
-			options,
-		);
+		score.render(snap([60], [[64]], [1000]), options);
 		expect(host.querySelectorAll(".clefs")).toHaveLength(1);
 	});
 
@@ -49,9 +57,11 @@ describe("createScore — clés fixes", () => {
 
 describe("createScore — rythme", () => {
 	const quarters = (count: number) => ({
-		current: [],
-		history: Array.from({ length: count }, (_, i) => [60 + i]),
-		durations: Array.from({ length: count }, () => 1000),
+		...snap(
+			[],
+			Array.from({ length: count }, (_, i) => [60 + i]),
+			Array.from({ length: count }, () => 1000),
+		),
 	});
 	const count = (selector: string) =>
 		host.querySelectorAll(`:scope > svg ${selector}`).length;
@@ -85,10 +95,7 @@ describe("createScore — rythme", () => {
 
 	it("dessine une hampe pour une noire et aucune pour une ronde", () => {
 		const render = (ms: number) => {
-			createScore(host).render(
-				{ current: [], history: [[64]], durations: [ms] },
-				options,
-			);
+			createScore(host).render(snap([], [[64]], [ms]), options);
 			return count(".vf-stem");
 		};
 		expect(render(1000)).toBeGreaterThan(0);

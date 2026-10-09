@@ -26,6 +26,8 @@ describe("createChordTracker", () => {
 			current: [],
 			history: [[60, 64]],
 			durations: [500],
+			starts: [0],
+			currentStart: null,
 		});
 	});
 
@@ -37,6 +39,8 @@ describe("createChordTracker", () => {
 			current: [64],
 			history: [[60]],
 			durations: [200],
+			starts: [0],
+			currentStart: 200,
 		});
 	});
 
@@ -57,6 +61,8 @@ describe("createChordTracker", () => {
 			current: [60],
 			history: [],
 			durations: [],
+			starts: [],
+			currentStart: 0,
 		});
 	});
 
@@ -79,6 +85,8 @@ describe("createChordTracker", () => {
 			current: [],
 			history: [[60, 64]],
 			durations: [300],
+			starts: [0],
+			currentStart: null,
 		});
 		expect(t.heldCount).toBe(0);
 	});
@@ -89,12 +97,20 @@ describe("createChordTracker", () => {
 		t.noteOff(60, 250);
 		t.noteOn(64, 500);
 		const before = t.clear();
-		expect(t.snapshot()).toEqual({ current: [], history: [], durations: [] });
+		expect(t.snapshot()).toEqual({
+			current: [],
+			history: [],
+			durations: [],
+			starts: [],
+			currentStart: null,
+		});
 		t.restore(before);
 		expect(t.snapshot()).toEqual({
 			current: [64],
 			history: [[60]],
 			durations: [250],
+			starts: [0],
+			currentStart: 500,
 		});
 	});
 
@@ -103,7 +119,13 @@ describe("createChordTracker", () => {
 		t.noteOn(60, 0);
 		t.clear();
 		t.noteOff(60);
-		expect(t.snapshot()).toEqual({ current: [], history: [], durations: [] });
+		expect(t.snapshot()).toEqual({
+			current: [],
+			history: [],
+			durations: [],
+			starts: [],
+			currentStart: null,
+		});
 	});
 
 	it("mesure la durée d'un accord jusqu'au relâchement de sa dernière touche", () => {
@@ -130,5 +152,34 @@ describe("createChordTracker", () => {
 		t.noteOn(60, 1000);
 		t.noteOff(60, 900);
 		expect(t.snapshot().durations).toEqual([0]);
+	});
+
+	it("retient l'instant où chaque accord a commencé, et celui de l'accord en cours", () => {
+		const t = setup();
+		t.noteOn(60, 1000);
+		t.noteOff(60, 1200);
+		t.noteOn(64, 2500);
+		expect(t.snapshot().starts).toEqual([1000]);
+		expect(t.snapshot().currentStart).toBe(2500);
+	});
+
+	it("garde autant d'instants de départ que d'accords quand l'historique est borné", () => {
+		const t = setup();
+		for (let i = 0; i < 6; i++) {
+			t.noteOn(60 + i, i * 1000);
+			t.noteOff(60 + i, i * 1000 + 100);
+		}
+		expect(t.snapshot().starts).toEqual([3000, 4000, 5000]);
+	});
+
+	it("restaure les instants de départ avec l'accord en cours", () => {
+		const t = setup();
+		t.noteOn(60, 100);
+		t.noteOff(60, 200);
+		t.noteOn(64, 700);
+		const before = t.clear();
+		t.restore(before);
+		expect(t.snapshot().starts).toEqual([100]);
+		expect(t.snapshot().currentStart).toBe(700);
 	});
 });

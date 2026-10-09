@@ -1,6 +1,7 @@
 import { type ChordSnapshot, createChordTracker } from "./chords";
 import { describeChord, describeScore } from "./describe";
 import { browserFullscreen, type Fullscreen } from "./fullscreen";
+import { createGrid } from "./grid";
 import {
 	browserClickPlayer,
 	type ClickPlayer,
@@ -25,6 +26,7 @@ import {
 import { createScore, SLOTS } from "./score";
 import { type BooleanSetting, createSettings } from "./settings";
 import { STRINGS } from "./strings";
+import { createTimeline } from "./timeline";
 
 const GROUP_MS = 60;
 const SILENCE_MS = 2000;
@@ -87,12 +89,14 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	const notice = el("div", "notice");
 	const hint = el("p", "hint");
 	const scoreHost = el("div");
+	const timelineHost = el("div", "timeline");
+	timelineHost.hidden = true;
 	const description = el("div", "sr");
 	const score = el("div", "score");
 	score.tabIndex = 0;
 	score.setAttribute("role", "group");
 	score.setAttribute("aria-label", STRINGS.scoreLabel);
-	score.append(scoreHost, description);
+	score.append(scoreHost, timelineHost, description);
 	const stage = el("main", "stage");
 	stage.append(notice, score, hint);
 	const drawerHost = el("div");
@@ -109,6 +113,8 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	root.replaceChildren(title, shell, live);
 
 	const scoreView = createScore(scoreHost);
+	const timeline = createTimeline(timelineHost);
+	const grid = createGrid();
 	const say = (text: string) => {
 		live.textContent = "";
 		setTimeout(() => {
@@ -146,6 +152,11 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	// --- état
 	let status: MidiStatus = { kind: "idle" };
 	let frozen: ChordSnapshot | null = null;
+	/** Instant du gel : le temps affiché s'arrête avec l'historique. */
+	let frozenAt: number | null = null;
+	let scrolling = false;
+	let pendingStart = false;
+	let pendingMeasure = false;
 	let drawerOpen = false;
 	let renderQueued = false;
 	let silenceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -170,7 +181,6 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		freezeButton,
 		clearButton,
 		metronomeButton,
-		beatIndicator,
 		grow,
 		...(fullscreen.supported ? [fullscreenButton] : []),
 		optionsButton,
@@ -179,6 +189,7 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	const toggleFreeze = () => {
 		if (!isReady()) return;
 		frozen = frozen ? null : tracker.snapshot();
+		frozenAt = frozen ? now() : null;
 		refresh();
 		freezeButton.focus();
 	};
@@ -188,7 +199,15 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		const before = tracker.clear();
 		playedSinceAnnounce = false;
 		const previousFrozen = frozen;
-		frozen = frozen ? { current: [], history: [], durations: [] } : null;
+		frozen = frozen
+			? {
+					current: [],
+					history: [],
+					durations: [],
+					starts: [],
+					currentStart: null,
+				}
+			: null;
 		refresh();
 		toast(STRINGS.cleared, STRINGS.undo, () => {
 			const since = tracker.snapshot();
@@ -206,6 +225,15 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 					...(since.current.length > 0 && before.current.length > 0 ? [0] : []),
 					...since.durations,
 				],
+				starts: [
+					...before.starts,
+					...(since.current.length > 0 && before.current.length > 0
+						? [before.currentStart ?? 0]
+						: []),
+					...since.starts,
+				],
+				currentStart:
+					since.current.length > 0 ? since.currentStart : before.currentStart,
 			});
 			frozen = previousFrozen;
 			refresh();
@@ -289,10 +317,17 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	};
 
 	// --- rythme
+	let gridTempo = settings.get().tempo;
+	let gridBeats = beatsPerMeasure(settings.get().signature);
 	const applyRhythm = () => {
 		const { signature, tempo, muted } = settings.get();
-		metronome.setRhythm({ beats: beatsPerMeasure(signature), tempo });
+		const beats = beatsPerMeasure(signature);
+		metronome.setRhythm({ beats, tempo });
 		metronome.setMuted(muted);
+		if (grid.active && tempo !== gridTempo) grid.setTempo(now(), tempo);
+		if (grid.active && beats !== gridBeats) pendingMeasure = true;
+		gridTempo = tempo;
+		gridBeats = beats;
 	};
 
 	const changeRhythm = (
@@ -379,6 +414,16 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	};
 
 	const showBeat = (beat: number) => {
+		const { tempo, signature } = settings.get();
+		if (pendingStart) {
+			pendingStart = false;
+			grid.start(now(), tempo, beatsPerMeasure(signature));
+			scrolling = true;
+			refresh();
+		} else if (pendingMeasure && grid.active) {
+			pendingMeasure = false;
+			grid.setMeasure(now(), beatsPerMeasure(signature));
+		}
 		beatIndicator.textContent = String(beat + 1);
 		beatIndicator.dataset.accent = String(beat === 0);
 		beatIndicator.dataset.on = "true";
@@ -387,12 +432,19 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	const toggleMetronome = async () => {
 		if (metronome.running) {
 			metronome.stop();
+			pendingStart = false;
+			pendingMeasure = false;
+			grid.stop();
+			scrolling = false;
+			timeline.stop();
+			refresh();
 			beatIndicator.textContent = "";
 			delete beatIndicator.dataset.on;
 			renderMetronomeButton();
 			say(STRINGS.metronomeStopped);
 			return;
 		}
+		pendingStart = true;
 		const started = metronome.start();
 		renderMetronomeButton();
 		const { sound } = await started;
@@ -403,6 +455,7 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		metronomeButton.replaceChildren(
 			document.createTextNode(STRINGS.metronome),
 			shortcutHint("M"),
+			beatIndicator,
 		);
 		metronomeButton.setAttribute("aria-pressed", String(metronome.running));
 	};
@@ -449,18 +502,30 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		stage.dataset.mode = status.kind;
 		const snapshot = shown();
 		const current = settings.get();
+		const scoreOptions = {
+			flats: current.flats,
+			names: current.names,
+			signature: current.signature,
+			tempo: current.tempo,
+		};
+		scoreHost.hidden = scrolling;
+		timelineHost.hidden = !scrolling;
 		try {
-			scoreView.render(snapshot, {
-				flats: current.flats,
-				names: current.names,
-				signature: current.signature,
-				tempo: current.tempo,
-			});
+			if (scrolling) {
+				timeline.show(snapshot, {
+					grid,
+					options: scoreOptions,
+					nowMs: () => frozenAt ?? now(),
+				});
+			} else {
+				timeline.stop();
+				scoreView.render(snapshot, scoreOptions);
+			}
 		} catch (error) {
 			console.error("Rendu de la partition impossible", error);
 		}
 		renderDescription(snapshot, current.flats);
-		if (score.scrollWidth > score.clientWidth) {
+		if (!scrolling && score.scrollWidth > score.clientWidth) {
 			const slot = Math.min(snapshot.history.length, SLOTS - 1);
 			score.scrollLeft = Math.max(
 				0,

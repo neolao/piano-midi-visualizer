@@ -1,5 +1,5 @@
 ---
-status: todo
+status: done
 depends_on: [005]
 ---
 # Faire défiler l'historique des notes jouées

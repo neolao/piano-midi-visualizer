@@ -1,5 +1,5 @@
 ---
-status: todo
+status: done
 ---
 # Placer une note sur la portée
 

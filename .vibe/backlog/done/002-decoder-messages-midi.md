@@ -1,5 +1,5 @@
 ---
-status: todo
+status: done
 ---
 # Décoder les messages MIDI de notes
 

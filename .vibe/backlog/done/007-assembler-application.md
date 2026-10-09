@@ -1,5 +1,5 @@
 ---
-status: todo
+status: done
 depends_on: [001,003,005]
 ---
 # Assembler la page de capture en direct

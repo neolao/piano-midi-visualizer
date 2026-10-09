@@ -1,6 +1,6 @@
 {
 	"name": "piano-midi-visualizer",
-	"version": "0.6.1",
+	"version": "0.7.0",
 	"description": "Page web statique qui capture un piano MIDI et affiche les notes sur une partition en direct",
 	"private": true,
 	"type": "module",

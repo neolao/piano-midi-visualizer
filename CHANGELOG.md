@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-09
+
 ### Added
 
 - Quand le métronome tourne, la partition défile au rythme du tempo : un trait fixe marque le temps présent, les barres de mesure et les temps défilent, et chaque note se place à l'endroit de la mesure où elle a été jouée, donc les espaces montrent le rythme réel. Le défilement s'arrête avec Figer ; métronome arrêté, la partition redevient fixe.
@@ -62,7 +64,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 - Les utilisateurs peuvent activer le MIDI d'un clic et voir la liste de leurs pianos branchés, mise à jour à chaud, avec des messages clairs si le navigateur est incompatible, si l'accès est refusé ou en cas d'échec.
 
-[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/neolao/piano-midi-visualizer/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.4.0...v0.5.0

@@ -64,6 +64,8 @@ const flush = async () => {
 	await new Promise((r) => setTimeout(r, 0));
 	await new Promise((r) => requestAnimationFrame(() => r(null)));
 };
+const pressed = (label: string) =>
+	buttonByText(label).getAttribute("aria-pressed");
 const buttonByText = (text: string) =>
 	[...root.querySelectorAll("button")].find((b) =>
 		b.textContent?.startsWith(text),
@@ -438,7 +440,7 @@ describe("mountApp", () => {
 			expect(tempoInput().value).toBe("80");
 			await wait(200);
 			expect(clicks).toEqual([]);
-			expect(buttonByText("Démarrer le métronome")).toBeTruthy();
+			expect(pressed("Métronome")).toBe("false");
 		});
 
 		it("mémorise la mesure et le tempo choisis et les transmet à la partition", async () => {
@@ -512,24 +514,34 @@ describe("mountApp", () => {
 
 		it("démarre et arrête le métronome en annonçant l'état une seule fois", async () => {
 			boot(memoryStorage(), () => 0, player);
-			buttonByText("Démarrer le métronome").click();
+			buttonByText("Métronome").click();
 			await wait(250);
 			expect(clicks[0]).toBe(true);
 			expect(said()).toContain("Métronome en marche");
 			expect(root.querySelector(".beat")?.textContent).toBe("1");
-			buttonByText("Arrêter le métronome").click();
+			buttonByText("Métronome").click();
 			await wait(60);
 			expect(said()).toContain("Métronome arrêté");
 			expect(root.querySelector(".beat")?.textContent).toBe("");
+		});
+
+		it("garde le même libellé court que le métronome soit arrêté ou en marche", async () => {
+			boot(memoryStorage(), () => 0, player);
+			const label = () => buttonByText("Métronome").firstChild?.textContent;
+			expect(label()).toBe("Métronome");
+			buttonByText("Métronome").click();
+			await wait(60);
+			expect(label()).toBe("Métronome");
+			expect(pressed("Métronome")).toBe("true");
 		});
 
 		it("se pilote avec la touche M quand les raccourcis sont actifs", async () => {
 			boot(memoryStorage(), () => 0, player);
 			document.dispatchEvent(new KeyboardEvent("keydown", { key: "m" }));
 			await wait(100);
-			expect(buttonByText("Arrêter le métronome")).toBeTruthy();
+			expect(pressed("Métronome")).toBe("true");
 			document.dispatchEvent(new KeyboardEvent("keydown", { key: "m" }));
-			expect(buttonByText("Démarrer le métronome")).toBeTruthy();
+			expect(pressed("Métronome")).toBe("false");
 		});
 
 		it("n'émet aucun son quand il est coupé mais garde le temps affiché", async () => {
@@ -538,7 +550,7 @@ describe("mountApp", () => {
 			(root.querySelector('[data-key="muted"]') as HTMLButtonElement).click();
 			await wait(60);
 			expect(said()).toContain("Son du métronome coupé");
-			buttonByText("Démarrer le métronome").click();
+			buttonByText("Métronome").click();
 			await wait(250);
 			expect(clicks).toEqual([]);
 			expect(root.querySelector(".beat")?.textContent).toBe("1");
@@ -547,7 +559,7 @@ describe("mountApp", () => {
 		it("prévient quand le navigateur refuse l'audio, et bat quand même", async () => {
 			audioOk = false;
 			boot(memoryStorage(), () => 0, player);
-			buttonByText("Démarrer le métronome").click();
+			buttonByText("Métronome").click();
 			await wait(250);
 			expect(said()).toContain("sans son");
 			expect(root.querySelector(".beat")?.textContent).toBe("1");
@@ -606,19 +618,29 @@ describe("mountApp", () => {
 			bootFullscreen();
 			buttonByText("Plein écran").click();
 			await wait(60);
-			expect(buttonByText("Quitter le plein écran")).toBeTruthy();
+			expect(pressed("Plein écran")).toBe("true");
 			expect(said()).toContain("Plein écran activé");
-			buttonByText("Quitter le plein écran").click();
+			buttonByText("Plein écran").click();
 			await wait(60);
-			expect(buttonByText("Plein écran")).toBeTruthy();
+			expect(pressed("Plein écran")).toBe("false");
 			expect(said()).toContain("Plein écran quitté");
+		});
+
+		it("garde le libellé « Plein écran » en plein écran, avec l'état dans le bouton", async () => {
+			bootFullscreen();
+			buttonByText("Plein écran").click();
+			await wait(60);
+			expect(buttonByText("Plein écran").firstChild?.textContent).toBe(
+				"Plein écran",
+			);
+			expect(pressed("Plein écran")).toBe("true");
 		});
 
 		it("se pilote avec la touche P", async () => {
 			bootFullscreen();
 			document.dispatchEvent(new KeyboardEvent("keydown", { key: "p" }));
 			await wait(60);
-			expect(buttonByText("Quitter le plein écran")).toBeTruthy();
+			expect(pressed("Plein écran")).toBe("true");
 		});
 
 		it("ignore la touche P quand les raccourcis sont désactivés", async () => {
@@ -627,7 +649,7 @@ describe("mountApp", () => {
 			bootFullscreen(true, storage);
 			document.dispatchEvent(new KeyboardEvent("keydown", { key: "p" }));
 			await wait(60);
-			expect(buttonByText("Plein écran")).toBeTruthy();
+			expect(pressed("Plein écran")).toBe("false");
 		});
 
 		it("remet le bouton à jour quand le navigateur quitte le plein écran (Échap)", async () => {
@@ -637,7 +659,7 @@ describe("mountApp", () => {
 			state.active = false;
 			state.listener();
 			await wait(60);
-			expect(buttonByText("Plein écran")).toBeTruthy();
+			expect(pressed("Plein écran")).toBe("false");
 		});
 
 		it("n'affiche pas le bouton quand le navigateur ne gère pas le plein écran", () => {
@@ -657,7 +679,7 @@ describe("mountApp", () => {
 			buttonByText("Plein écran").click();
 			await wait(60);
 			expect(said()).toContain("Le navigateur n'a pas autorisé le plein écran");
-			expect(buttonByText("Plein écran")).toBeTruthy();
+			expect(pressed("Plein écran")).toBe("false");
 		});
 	});
 });

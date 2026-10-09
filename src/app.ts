@@ -401,20 +401,18 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 
 	const renderMetronomeButton = () => {
 		metronomeButton.replaceChildren(
-			document.createTextNode(
-				metronome.running ? STRINGS.metronomeStop : STRINGS.metronomeStart,
-			),
+			document.createTextNode(STRINGS.metronome),
 			shortcutHint("M"),
 		);
+		metronomeButton.setAttribute("aria-pressed", String(metronome.running));
 	};
 
 	const renderFullscreenButton = () => {
 		fullscreenButton.replaceChildren(
-			document.createTextNode(
-				fullscreen.active() ? STRINGS.fullscreenExit : STRINGS.fullscreenEnter,
-			),
+			document.createTextNode(STRINGS.fullscreenEnter),
 			shortcutHint("P"),
 		);
+		fullscreenButton.setAttribute("aria-pressed", String(fullscreen.active()));
 	};
 
 	const toggleFullscreen = async () => {

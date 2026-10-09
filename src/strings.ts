@@ -55,12 +55,10 @@ export const STRINGS = {
 	optionMuted: "Couper le son du métronome",
 	optionMutedHelp: "Le temps reste affiché à l'écran",
 	fullscreenEnter: "Plein écran",
-	fullscreenExit: "Quitter le plein écran",
 	fullscreenOn: "Plein écran activé",
 	fullscreenOff: "Plein écran quitté",
 	fullscreenRefused: "Le navigateur n'a pas autorisé le plein écran",
-	metronomeStart: "Démarrer le métronome",
-	metronomeStop: "Arrêter le métronome",
+	metronome: "Métronome",
 	metronomeStarted: "Métronome en marche",
 	metronomeStartedSilent:
 		"Métronome en marche, sans son : le navigateur n'a pas autorisé l'audio",

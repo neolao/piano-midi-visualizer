@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Les textes du panneau Options ne se chevauchent plus sur un écran peu haut, et la barre de boutons du bas tient sur une seule ligne sur tablette : les boutons Métronome et Plein écran gardent un libellé court et s'affichent en bleu plein quand ils sont actifs.
+
 ## [0.6.0] - 2026-10-09
 
 ### Added

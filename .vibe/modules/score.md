@@ -3,3 +3,4 @@
 **Files:** `src/score.ts`
 **Exports:** `createScore(container)`, `SLOTS`
 **Depends on:** `modules/staff.md`, `modules/chords.md` (type `ChordSnapshot`), tokens CSS
+**Note:** une copie des clés (`.clefs`) reste collée à gauche quand la partition défile.

@@ -189,11 +189,29 @@ kbd {
 	display: none;
 }
 
+.score {
+	container-type: inline-size;
+}
+
 .score svg {
 	display: block;
 	width: 100%;
 	min-width: 1000px;
 	height: auto;
+}
+
+.clefs {
+	position: sticky;
+	left: 0;
+	z-index: 1;
+	width: 0;
+	height: 0;
+}
+
+.clefs svg {
+	position: absolute;
+	min-width: 0;
+	width: calc(max(1000px, 100cqw) * var(--clef-ratio));
 }
 
 .cmdwrap {

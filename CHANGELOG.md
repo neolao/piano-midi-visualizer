@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Les clés de sol et de fa restent visibles à gauche de la partition quand elle défile sur un écran étroit.
+
 ## [0.3.0] - 2026-10-09
 
 ### Added

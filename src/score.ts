@@ -40,6 +40,35 @@ function token(name: string): string {
 	);
 }
 
+/**
+ * Quand la partition défile, les clés sortent de l'écran : on en superpose une
+ * copie collée à gauche (le bord gauche de la partition, sans aucune note).
+ */
+function pinClefs(
+	container: HTMLElement,
+	svg: SVGSVGElement,
+	clefWidth: number,
+	background: string,
+): void {
+	const copy = svg.cloneNode(true) as SVGSVGElement;
+	copy.setAttribute("viewBox", `0 0 ${clefWidth} ${HEIGHT}`);
+	const backdrop = document.createElementNS(
+		"http://www.w3.org/2000/svg",
+		"rect",
+	);
+	backdrop.setAttribute("width", String(clefWidth));
+	backdrop.setAttribute("height", String(HEIGHT));
+	backdrop.setAttribute("fill", background);
+	backdrop.setAttribute("stroke", "none");
+	copy.prepend(backdrop);
+	copy.style.setProperty("--clef-ratio", String(clefWidth / WIDTH));
+	const pin = document.createElement("div");
+	pin.className = "clefs";
+	pin.setAttribute("aria-hidden", "true");
+	pin.append(copy);
+	container.prepend(pin);
+}
+
 export function createScore(container: HTMLElement): Score {
 	return {
 		render(snapshot, options) {
@@ -158,6 +187,8 @@ export function createScore(container: HTMLElement): Score {
 				);
 			trebleVoice.draw(context, treble);
 			bassVoice.draw(context, bass);
+			if (svg)
+				pinClefs(container, svg, treble.getNoteStartX(), colors.background);
 
 			if (hasCurrent && options.names) {
 				const slot = chords.length - 1;

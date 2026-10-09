@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-09
+
 ### Added
 
 - L'application est publiée en ligne sur https://neolao.github.io/piano-midi-visualizer/ et se met à jour automatiquement à chaque modification, seulement si le style, les tests et la construction passent.
@@ -19,5 +21,6 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 - Les utilisateurs peuvent activer le MIDI d'un clic et voir la liste de leurs pianos branchés, mise à jour à chaud, avec des messages clairs si le navigateur est incompatible, si l'accès est refusé ou en cas d'échec.
 
-[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/neolao/piano-midi-visualizer/releases/tag/v0.1.0

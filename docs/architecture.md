@@ -8,8 +8,8 @@ La page est écrite en TypeScript sans framework. La logique pure est séparée 
 |---|---|
 | `main.ts` | Charge les styles, branche le navigateur réel (`browserMidiEnvironment`, `localStorage`) et monte l'application. |
 | `app.ts` | Assemble la page : barre MIDI, partition, commandes (Figer, Effacer, Options), annonces vocales, raccourcis. |
-| `midi-access.ts` | Demande l'accès Web MIDI, calcule l'état (`MidiStatus`), suit les branchements et transmet les messages de notes. |
-| `midi-panel.ts` | Dessine la barre MIDI et la scène d'état (activation, erreurs, aide, bandeau « débranché »). |
+| `midi-access.ts` | Demande l'accès Web MIDI, calcule l'état (`MidiStatus`), suit les branchements, filtre sur le piano choisi (`select`) et transmet les messages de notes. |
+| `midi-panel.ts` | Dessine la barre MIDI et la liste de choix du piano, scène d'état (activation, erreurs, aide, bandeau « débranché »). |
 | `midi.ts` | Décode les messages MIDI bruts en `NoteEvent`. |
 | `chords.ts`, `held-notes.ts` | Notes tenues, regroupement en accords (60 ms), historique borné, effacement et restauration. |
 | `staff.ts` | Place une note sur la portée (clé, altération, nom français, clé VexFlow). |

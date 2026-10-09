@@ -5,7 +5,7 @@ Hauteur jouée au piano, identifiée par un numéro de 0 à 127 (60 = do central
 _Sources: `src/midi.ts`, `src/staff.ts`_
 
 ## Piano détecté
-Entrée MIDI connectée que la page peut écouter. Elle apparaît dans la barre MIDI dès qu'on la branche ; une entrée à l'état déconnecté n'est pas comptée. Quand le piano disparaît, les notes tenues sont relâchées et la partition reste affichée.
+Entrée MIDI connectée que la page peut écouter. Elle apparaît dans la barre MIDI dès qu'on la branche ; une entrée à l'état déconnecté n'est pas comptée. Avec plusieurs pianos, l'utilisateur peut n'en écouter qu'un ; si celui-là disparaît, la page le signale et écoute de nouveau tous les pianos. Quand le piano disparaît, les notes tenues sont relâchées et la partition reste affichée.
 _Sources: `src/midi-access.ts`, `src/midi-panel.ts`_
 
 ## Activation du MIDI

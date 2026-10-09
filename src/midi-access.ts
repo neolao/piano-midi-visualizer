@@ -29,11 +29,18 @@ export type MidiStatus =
 	| { kind: "unsupported"; insecure: boolean }
 	| { kind: "denied" }
 	| { kind: "error" }
-	| { kind: "ready"; inputs: MidiInputInfo[]; announcement: string | null };
+	| {
+			kind: "ready";
+			inputs: MidiInputInfo[];
+			announcement: string | null;
+			selected?: string;
+			lost?: string;
+	  };
 
 export interface MidiController {
 	readonly status: MidiStatus;
 	activate(): Promise<void>;
+	select(id: string | null): void;
 }
 
 const NOM_PAR_DEFAUT = "Entrée MIDI sans nom";
@@ -81,11 +88,27 @@ export function createMidiController(
 		onChange(next);
 	};
 
+	let selectedId: string | null = null;
+	let currentAccess: MidiAccessLike | null = null;
+
+	const ready = (
+		access: MidiAccessLike,
+		announcement: string | null,
+		lost?: string,
+	): MidiStatus => ({
+		kind: "ready",
+		inputs: connectedInputs(access),
+		announcement,
+		...(selectedId ? { selected: selectedId } : {}),
+		...(lost ? { lost } : {}),
+	});
+
 	const listenToNotes = (access: MidiAccessLike) => {
 		for (const input of access.inputs.values()) {
 			if (input.type !== "input") continue;
 			input.onmidimessage =
-				input.state === "connected"
+				input.state === "connected" &&
+				(selectedId === null || input.id === selectedId)
 					? (event) => {
 							if (event.data) onMessage?.(event.data);
 						}
@@ -95,14 +118,17 @@ export function createMidiController(
 
 	const listen = (access: MidiAccessLike) => {
 		access.onstatechange = () => {
-			listenToNotes(access);
 			const before = status.kind === "ready" ? status.inputs : [];
 			const inputs = connectedInputs(access);
-			update({
-				kind: "ready",
-				inputs,
-				announcement: describeChanges(before, inputs),
-			});
+			const lost =
+				selectedId !== null && !inputs.some((i) => i.id === selectedId)
+					? before.find((i) => i.id === selectedId)?.name
+					: undefined;
+			if (selectedId !== null && !inputs.some((i) => i.id === selectedId)) {
+				selectedId = null;
+			}
+			listenToNotes(access);
+			update(ready(access, describeChanges(before, inputs), lost));
 		};
 	};
 
@@ -110,19 +136,23 @@ export function createMidiController(
 		get status() {
 			return status;
 		},
+		select(id) {
+			if (!currentAccess || status.kind !== "ready") return;
+			if (id !== null && !status.inputs.some((i) => i.id === id)) return;
+			selectedId = id;
+			listenToNotes(currentAccess);
+			update(ready(currentAccess, null));
+		},
 		async activate() {
 			if (!request || (status.kind !== "idle" && status.kind !== "error"))
 				return;
 			update({ kind: "requesting" });
 			try {
 				const access = await request();
+				currentAccess = access;
 				listen(access);
 				listenToNotes(access);
-				update({
-					kind: "ready",
-					inputs: connectedInputs(access),
-					announcement: null,
-				});
+				update(ready(access, null));
 			} catch (error) {
 				const refused =
 					error instanceof Error && ERREURS_DE_REFUS.includes(error.name);

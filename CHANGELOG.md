@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Quand plusieurs pianos sont branchés, les utilisateurs choisissent celui à écouter dans une liste de la barre MIDI ; si le piano choisi est débranché, la page le signale et écoute de nouveau tous les pianos.
+
 ## [0.2.0] - 2026-10-09
 
 ### Added

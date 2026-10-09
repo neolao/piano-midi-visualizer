@@ -13,8 +13,11 @@ beforeEach(() => {
 	onActivate = vi.fn();
 });
 
+let onSelect: (id: string | null) => void;
+
 function show(status: MidiStatus) {
-	const panel = createMidiPanel({ bar, notice }, onActivate);
+	onSelect = vi.fn();
+	const panel = createMidiPanel({ bar, notice }, onActivate, onSelect);
 	panel.render(status);
 	return panel;
 }
@@ -136,5 +139,62 @@ describe("createMidiPanel — barre MIDI", () => {
 		show(ready("<img src=x onerror=alert(1)>"));
 		expect(bar.querySelector("img")).toBeNull();
 		expect(bar.textContent).toContain("<img");
+	});
+});
+
+describe("createMidiPanel — choix du périphérique", () => {
+	const twoReady = (selected?: string): MidiStatus => ({
+		kind: "ready",
+		inputs: [piano("a"), piano("b")],
+		announcement: null,
+		...(selected ? { selected } : {}),
+	});
+
+	it("n'affiche pas de liste avec un seul piano", () => {
+		show(ready("a"));
+		expect(bar.querySelector("select")).toBeNull();
+	});
+
+	it("propose « Tous les pianos » puis chaque piano quand il y en a deux", () => {
+		show(twoReady());
+		const select = bar.querySelector("select") as HTMLSelectElement;
+		expect([...select.options].map((o) => o.textContent)).toEqual([
+			"Tous les pianos",
+			"a",
+			"b",
+		]);
+		expect(select.value).toBe("");
+	});
+
+	it("sélectionne le piano choisi et nomme la liste", () => {
+		show(twoReady("b"));
+		const select = bar.querySelector("select") as HTMLSelectElement;
+		expect(select.value).toBe("b");
+		expect(select.getAttribute("aria-label")).toBe("Piano à écouter");
+	});
+
+	it("transmet l'identifiant choisi, ou null pour tous", () => {
+		show(twoReady("b"));
+		const select = bar.querySelector("select") as HTMLSelectElement;
+		select.value = "a";
+		select.dispatchEvent(new Event("change"));
+		expect(onSelect).toHaveBeenLastCalledWith("a");
+		select.value = "";
+		select.dispatchEvent(new Event("change"));
+		expect(onSelect).toHaveBeenLastCalledWith(null);
+	});
+
+	it("garde le focus sur la liste après un nouveau rendu", () => {
+		const panel = show(twoReady());
+		(bar.querySelector("select") as HTMLSelectElement).focus();
+		panel.render(twoReady("a"));
+		expect(document.activeElement).toBe(bar.querySelector("select"));
+	});
+
+	it("avertit que le piano choisi a été débranché, en nommant le piano", () => {
+		show({ ...ready("b"), lost: "Yamaha P-125" } as MidiStatus);
+		expect(notice.textContent).toContain(
+			"Yamaha P-125 débranché — écoute de tous les pianos",
+		);
 	});
 });

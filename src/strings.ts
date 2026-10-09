@@ -7,6 +7,10 @@ export const STRINGS = {
 	noPianoHelp: "Aucun piano détecté. Branchez votre piano MIDI et allumez-le.",
 	pianoConnected: (names: string) => `Piano connecté : ${names}`,
 	pianoUnplugged: "Piano débranché — rebranchez-le pour continuer",
+	allPianos: "Tous les pianos",
+	pianoChoice: "Piano à écouter",
+	selectedUnplugged: (name: string) =>
+		`${name} débranché — écoute de tous les pianos`,
 	unsupported:
 		"Votre navigateur ne gère pas le MIDI. Essayez Chrome, Edge ou Opera.",
 	insecure:

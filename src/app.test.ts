@@ -334,4 +334,51 @@ describe("mountApp", () => {
 		expect(root.textContent).toContain("L'accès au MIDI a été refusé.");
 		expect(root.querySelector<HTMLElement>(".score")?.hidden).toBe(false);
 	});
+
+	it("n'affiche que les notes du piano choisi et relâche les notes tenues", async () => {
+		boot();
+		const second: MidiInputLike = {
+			id: "b",
+			name: "Roland FP-30X",
+			manufacturer: "Roland",
+			type: "input",
+			state: "connected",
+		};
+		(access.inputs as Map<string, MidiInputLike>).set("b", second);
+		buttonByText("Activer le MIDI").click();
+		await flush();
+		send(0x90, 60, 100);
+		const select = root.querySelector("select") as HTMLSelectElement;
+		select.value = "b";
+		select.dispatchEvent(new Event("change"));
+		await flush();
+		expect(renders.at(-1)).toMatchObject({
+			snapshot: { current: [], history: [[60]] },
+		});
+		send(0x90, 64, 100);
+		second.onmidimessage?.({ data: new Uint8Array([0x90, 67, 100]) });
+		await flush();
+		expect(renders.at(-1)).toMatchObject({ snapshot: { current: [67] } });
+	});
+
+	it("prévient quand le piano choisi est débranché", async () => {
+		boot();
+		const second: MidiInputLike = {
+			id: "b",
+			name: "Roland FP-30X",
+			manufacturer: "Roland",
+			type: "input",
+			state: "connected",
+		};
+		(access.inputs as Map<string, MidiInputLike>).set("b", second);
+		buttonByText("Activer le MIDI").click();
+		await flush();
+		const select = root.querySelector("select") as HTMLSelectElement;
+		select.value = "b";
+		select.dispatchEvent(new Event("change"));
+		second.state = "disconnected";
+		access.onstatechange?.({});
+		await flush();
+		expect(root.textContent).toContain("Roland FP-30X débranché");
+	});
 });

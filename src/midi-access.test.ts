@@ -228,5 +228,100 @@ describe("createMidiController", () => {
 			piano.onmidimessage?.({ data: null });
 			expect(received).toEqual([]);
 		});
+
+		describe("choix du périphérique", () => {
+			function twoPianos() {
+				const a = input("a", "Piano A");
+				const b = input("b", "Piano B");
+				const fake = fakeAccess([a, b]);
+				const received: number[][] = [];
+				const seen: MidiStatus[] = [];
+				const controller = createMidiController(
+					{ requestMIDIAccess: async () => fake.access, isSecureContext: true },
+					(s) => seen.push(s),
+					(data) => received.push(Array.from(data)),
+				);
+				return { a, b, fake, controller, received, seen };
+			}
+			const note = { data: new Uint8Array([0x90, 60, 100]) };
+
+			it("n'écoute que l'entrée choisie", async () => {
+				const { a, b, controller, received } = twoPianos();
+				await controller.activate();
+				controller.select("b");
+				a.onmidimessage?.(note);
+				expect(received).toEqual([]);
+				b.onmidimessage?.(note);
+				expect(received).toHaveLength(1);
+			});
+
+			it("réécoute toutes les entrées quand on choisit « tous »", async () => {
+				const { a, b, controller, received } = twoPianos();
+				await controller.activate();
+				controller.select("b");
+				controller.select(null);
+				a.onmidimessage?.(note);
+				b.onmidimessage?.(note);
+				expect(received).toHaveLength(2);
+			});
+
+			it("indique l'entrée choisie dans l'état", async () => {
+				const { controller } = twoPianos();
+				await controller.activate();
+				controller.select("a");
+				expect(controller.status).toMatchObject({
+					kind: "ready",
+					selected: "a",
+				});
+			});
+
+			it("n'écoute pas à chaud une nouvelle entrée quand une autre est choisie", async () => {
+				const { fake, controller, received } = twoPianos();
+				await controller.activate();
+				controller.select("a");
+				const late = input("c", "Piano C");
+				fake.add(late);
+				late.onmidimessage?.(note);
+				expect(received).toEqual([]);
+			});
+
+			it("signale l'entrée choisie débranchée et revient à toutes les entrées", async () => {
+				const { b, fake, controller, received } = twoPianos();
+				await controller.activate();
+				controller.select("a");
+				fake.remove("a");
+				expect(controller.status).toMatchObject({
+					kind: "ready",
+					lost: "Piano A",
+				});
+				expect(controller.status).not.toHaveProperty("selected");
+				b.onmidimessage?.(note);
+				expect(received).toHaveLength(1);
+			});
+
+			it("ne signale rien quand une entrée non choisie est débranchée", async () => {
+				const { fake, controller } = twoPianos();
+				await controller.activate();
+				controller.select("a");
+				fake.remove("b");
+				expect(controller.status).not.toHaveProperty("lost");
+				expect(controller.status).toMatchObject({ selected: "a" });
+			});
+
+			it("ignore un choix inconnu", async () => {
+				const { a, controller, received } = twoPianos();
+				await controller.activate();
+				controller.select("zzz");
+				a.onmidimessage?.(note);
+				expect(received).toHaveLength(1);
+				expect(controller.status).not.toHaveProperty("selected");
+			});
+
+			it("ignore un choix avant l'activation", () => {
+				const { controller, seen } = twoPianos();
+				controller.select("a");
+				expect(seen).toEqual([]);
+			});
+		});
 	});
 });

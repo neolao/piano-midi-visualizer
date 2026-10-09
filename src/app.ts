@@ -332,7 +332,7 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 			status = next;
 			panel.render(next);
 			if (next.kind === "ready") {
-				if (next.inputs.length === 0) tracker.releaseAll();
+				if (next.inputs.length === 0 || next.lost) tracker.releaseAll();
 				if (next.announcement) say(next.announcement);
 			}
 			refresh();
@@ -350,6 +350,10 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	const panel = createMidiPanel(
 		{ bar, notice },
 		() => void controller.activate(),
+		(id) => {
+			tracker.releaseAll();
+			controller.select(id);
+		},
 	);
 	status = controller.status;
 	panel.render(status);

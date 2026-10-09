@@ -11,8 +11,8 @@
 | `held-notes.test.ts`, `chords.test.ts` | Notes tenues, regroupement en accords, historique borné, effacement, restauration. |
 | `staff.test.ts` | Clé, altération, noms, clés VexFlow, bornes. |
 | `describe.test.ts`, `settings.test.ts` | Descriptions pour lecteurs d'écran ; réglages et stockage indisponible. |
-| `midi-access.test.ts` | États d'accès, refus, échec et réessai, branchement à chaud, réception des notes. |
-| `midi-panel.test.ts` | Barre MIDI et scène d'état. |
+| `midi-access.test.ts` | États d'accès, refus, échec et réessai, branchement à chaud, réception des notes, choix du piano. |
+| `midi-panel.test.ts` | Barre MIDI, liste de choix du piano et scène d'état. |
 | `app.test.ts` | Assemblage : Figer, Effacer et annuler, tiroir d'options, raccourcis, annonces (le rendu VexFlow est simulé). |
 | `scripts/check-dist.test.ts` | Détection des chemins absolus qui casseraient GitHub Pages. |
 

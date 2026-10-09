@@ -22,6 +22,7 @@ function element<K extends keyof HTMLElementTagNameMap>(
 export function createMidiPanel(
 	{ bar, notice }: Elements,
 	onActivate: () => void,
+	onSelect: (id: string | null) => void = () => {},
 ): MidiPanel {
 	let hadPiano = false;
 	notice.tabIndex = -1;
@@ -32,6 +33,24 @@ export function createMidiPanel(
 		if (primary) b.className = "primary";
 		b.addEventListener("click", onActivate);
 		return b;
+	};
+
+	const unpluggedBanner = (message: string) => {
+		const banner = element("div");
+		banner.className = "banner";
+		banner.append(element("span", "⚠"), element("span", message));
+		banner.firstElementChild?.setAttribute("aria-hidden", "true");
+		return banner;
+	};
+
+	const chooser = (status: Extract<MidiStatus, { kind: "ready" }>) => {
+		const select = element("select");
+		select.setAttribute("aria-label", STRINGS.pianoChoice);
+		select.append(new Option(STRINGS.allPianos, ""));
+		for (const p of status.inputs) select.append(new Option(p.name, p.id));
+		select.value = status.selected ?? "";
+		select.addEventListener("change", () => onSelect(select.value || null));
+		return select;
 	};
 
 	const noticeBody = (status: MidiStatus, pianos: number): HTMLElement[] => {
@@ -52,16 +71,11 @@ export function createMidiPanel(
 			case "error":
 				return [element("p", STRINGS.error), button(STRINGS.retry, true)];
 			case "ready": {
+				if (pianos > 0 && status.lost)
+					return [unpluggedBanner(STRINGS.selectedUnplugged(status.lost))];
 				if (pianos > 0) return [];
 				if (!hadPiano) return [element("p", STRINGS.noPianoHelp)];
-				const banner = element("div");
-				banner.className = "banner";
-				banner.append(
-					element("span", "⚠"),
-					element("span", STRINGS.pianoUnplugged),
-				);
-				banner.firstElementChild?.setAttribute("aria-hidden", "true");
-				return [banner];
+				return [unpluggedBanner(STRINGS.pianoUnplugged)];
 			}
 		}
 	};
@@ -78,7 +92,11 @@ export function createMidiPanel(
 		const name = element("span", text);
 		name.className = "bar-name";
 		name.title = text;
-		bar.replaceChildren(dot, name);
+		const hadFocus = bar.contains(document.activeElement);
+		const choice =
+			status.kind === "ready" && pianos.length > 1 ? chooser(status) : null;
+		bar.replaceChildren(...(choice ? [dot, name, choice] : [dot, name]));
+		if (hadFocus) choice?.focus();
 	};
 
 	return {

@@ -20,6 +20,10 @@ _Sources: `src/chords.ts`_
 Accords déjà joués, affichés en gris sur la partition (8 au plus) et conservés en mémoire jusqu'à une limite fixe. Il se fige, s'efface (avec annulation possible) et se lit en toutes lettres pour les lecteurs d'écran.
 _Sources: `src/chords.ts`, `src/app.ts`, `src/describe.ts`_
 
+## Installation de l'application
+Sur Android avec Chrome, l'utilisateur ajoute la page à son écran d'accueil : elle s'ouvre alors en plein écran avec une icône de piano, sans barre d'adresse. Elle reste en ligne seulement, sans copie hors ligne.
+_Sources: `public/manifest.webmanifest`, `scripts/check-dist.mjs`_
+
 ## Partition
 Deux portées (sol et fa) où les notes et accords apparaissent sans rythme ni durée.
 _Sources: `src/score.ts`_

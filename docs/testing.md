@@ -15,7 +15,8 @@
 | `rhythm.test.ts`, `metronome.test.ts`, `fullscreen.test.ts` | Arrondi des durées, mesures, tempo ; clics, accent, arrêt, son coupé ou refusé ; plein écran. |
 | `midi-panel.test.ts` | Barre MIDI, liste de choix du piano et scène d'état. |
 | `app.test.ts` | Assemblage : Figer, Effacer et annuler, tiroir d'options, raccourcis, annonces (le rendu VexFlow est simulé). |
-| `scripts/check-dist.test.ts` | Détection des chemins absolus qui casseraient GitHub Pages. |
+| `scripts/check-dist.test.ts` | Détection des chemins absolus qui casseraient GitHub Pages ; site installable (fiche, icônes, lien dans la page). |
+| `scripts/manifest.test.ts` | Fiche d'installation : nom, couleurs du design, icônes présentes à la bonne taille. |
 
 Le dessin VexFlow n'est pas testé dans jsdom (mesure de texte) : il se vérifie en vrai navigateur. Le rendu avec un vrai piano se contrôle à la main dans Chrome, Edge ou Opera.
 

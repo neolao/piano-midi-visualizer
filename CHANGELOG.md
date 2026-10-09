@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Les utilisateurs installent l'application sur Android depuis Chrome (menu « Installer l'application ») : elle s'ouvre en plein écran avec son icône de piano, sans barre d'adresse ; elle reste en ligne seulement.
+
 ## [0.5.0] - 2026-10-09
 
 ### Added

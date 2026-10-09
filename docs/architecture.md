@@ -15,6 +15,7 @@ La page est écrite en TypeScript sans framework. La logique pure est séparée 
 | `staff.ts` | Place une note sur la portée (clé, altération, nom français, clé VexFlow). |
 | `score.ts` | Dessine les deux portées avec VexFlow (8 accords visibles), l'indication de mesure, les barres de mesure et les durées. |
 | `rhythm.ts` | Mesures, tempo, arrondi d'une durée de maintien en valeur de note, découpage en mesures. |
+| `fullscreen.ts` | Plein écran du navigateur (bouton et touche P), injecté pour les tests. |
 | `metronome.ts` | Métronome : clics planifiés à l'avance sur l'horloge audio, temps affiché à l'heure du clic. |
 | `describe.ts` | Décrit les accords en toutes lettres pour les lecteurs d'écran. |
 | `settings.ts` | Réglages mémorisés dans `localStorage`. |

@@ -1,5 +1,6 @@
 import { type ChordSnapshot, createChordTracker } from "./chords";
 import { describeChord, describeScore } from "./describe";
+import { browserFullscreen, type Fullscreen } from "./fullscreen";
 import {
 	browserClickPlayer,
 	type ClickPlayer,
@@ -35,6 +36,7 @@ export interface AppDependencies {
 	storage?: Storage;
 	now?: () => number;
 	player?: ClickPlayer;
+	fullscreen?: Fullscreen;
 }
 
 const TEMPO_STEP = 5;
@@ -156,6 +158,8 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	const freezeButton = button("", () => toggleFreeze(), "F");
 	const clearButton = button(STRINGS.clear, () => clearScore(), "E");
 	const metronomeButton = button("", () => void toggleMetronome(), "M");
+	const fullscreen = deps.fullscreen ?? browserFullscreen();
+	const fullscreenButton = button("", () => void toggleFullscreen(), "P");
 	const beatIndicator = el("span", "beat");
 	beatIndicator.setAttribute("aria-hidden", "true");
 	const optionsButton = button(STRINGS.options, () => toggleDrawer());
@@ -168,6 +172,7 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		metronomeButton,
 		beatIndicator,
 		grow,
+		...(fullscreen.supported ? [fullscreenButton] : []),
 		optionsButton,
 	);
 
@@ -403,6 +408,24 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		);
 	};
 
+	const renderFullscreenButton = () => {
+		fullscreenButton.replaceChildren(
+			document.createTextNode(
+				fullscreen.active() ? STRINGS.fullscreenExit : STRINGS.fullscreenEnter,
+			),
+			shortcutHint("P"),
+		);
+	};
+
+	const toggleFullscreen = async () => {
+		try {
+			if (fullscreen.active()) await fullscreen.exit();
+			else await fullscreen.enter();
+		} catch {
+			say(STRINGS.fullscreenRefused);
+		}
+	};
+
 	// --- rendu
 	const renderDescription = (snapshot: ChordSnapshot, flats: boolean) => {
 		const summary = el(
@@ -530,6 +553,11 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 	panel.render(status);
 	applyRhythm();
 	renderMetronomeButton();
+	renderFullscreenButton();
+	fullscreen.onChange(() => {
+		renderFullscreenButton();
+		say(fullscreen.active() ? STRINGS.fullscreenOn : STRINGS.fullscreenOff);
+	});
 	renderDrawer();
 	refresh();
 
@@ -549,12 +577,14 @@ export function mountApp(root: HTMLElement, deps: AppDependencies): void {
 		}
 		if (target && /^(INPUT|SELECT|TEXTAREA)$/.test(target.tagName)) return;
 		const key = event.key.toLowerCase();
-		if (key !== "f" && key !== "e" && key !== "l" && key !== "m") return;
+		if (key !== "f" && key !== "e" && key !== "l" && key !== "m" && key !== "p")
+			return;
 		event.preventDefault();
 		if (event.repeat) return;
 		if (key === "f") toggleFreeze();
 		else if (key === "e") clearScore();
 		else if (key === "m") void toggleMetronome();
+		else if (key === "p") void toggleFullscreen();
 		else announceLastChord();
 	});
 }

@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Les utilisateurs affichent la page en plein écran avec un bouton ou la touche P, et en sortent avec le même bouton ou la touche Échap ; le bouton n'apparaît pas si le navigateur ne le permet pas.
+
 ## [0.4.0] - 2026-10-09
 
 ### Added

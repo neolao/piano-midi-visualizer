@@ -12,6 +12,7 @@
 - [`modules/describe.md`](modules/describe.md) — description textuelle pour lecteurs d'écran
 - [`modules/rhythm.md`](modules/rhythm.md) — mesures, tempo et valeurs de notes
 - [`modules/metronome.md`](modules/metronome.md) — métronome à clics planifiés
+- [`modules/fullscreen.md`](modules/fullscreen.md) — plein écran du navigateur
 - [`modules/settings.md`](modules/settings.md) — réglages mémorisés
 - [`modules/ci.md`](modules/ci.md) — contrôles et déploiement GitHub Pages
 

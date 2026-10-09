@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mountApp } from "./app";
+import type { Fullscreen } from "./fullscreen";
 import type { ClickPlayer } from "./metronome";
 import type { MidiAccessLike, MidiInputLike } from "./midi-access";
 
@@ -34,6 +35,7 @@ function boot(
 	storage: Storage = memoryStorage(),
 	now = () => 0,
 	player?: ClickPlayer,
+	fullscreen?: Fullscreen,
 ) {
 	piano = {
 		id: "a",
@@ -51,6 +53,7 @@ function boot(
 		storage,
 		now,
 		player,
+		fullscreen,
 	});
 }
 
@@ -562,6 +565,99 @@ describe("mountApp", () => {
 			expect(root.querySelector(".score .sr")?.textContent).toContain(
 				"Do 4 (noire pointée)",
 			);
+		});
+	});
+
+	describe("plein écran", () => {
+		/** État propre à chaque test : les anciennes pages montées gardent le leur. */
+		let state = { active: false, refuse: false, listener: () => {} };
+		const fake = (supported = true): Fullscreen => {
+			const own = state;
+			return {
+				supported,
+				active: () => own.active,
+				enter: async () => {
+					if (own.refuse) throw new Error("refusé");
+					own.active = true;
+					own.listener();
+				},
+				exit: async () => {
+					own.active = false;
+					own.listener();
+				},
+				onChange: (l) => {
+					own.listener = l;
+				},
+			};
+		};
+		const said = () =>
+			[...root.querySelectorAll("[role=status]")]
+				.map((n) => n.textContent)
+				.join(" | ");
+		const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+		const bootFullscreen = (supported = true, storage = memoryStorage()) =>
+			boot(storage, () => 0, undefined, fake(supported));
+
+		beforeEach(() => {
+			state = { active: false, refuse: false, listener: () => {} };
+		});
+
+		it("passe en plein écran puis le quitte avec le bouton", async () => {
+			bootFullscreen();
+			buttonByText("Plein écran").click();
+			await wait(60);
+			expect(buttonByText("Quitter le plein écran")).toBeTruthy();
+			expect(said()).toContain("Plein écran activé");
+			buttonByText("Quitter le plein écran").click();
+			await wait(60);
+			expect(buttonByText("Plein écran")).toBeTruthy();
+			expect(said()).toContain("Plein écran quitté");
+		});
+
+		it("se pilote avec la touche P", async () => {
+			bootFullscreen();
+			document.dispatchEvent(new KeyboardEvent("keydown", { key: "p" }));
+			await wait(60);
+			expect(buttonByText("Quitter le plein écran")).toBeTruthy();
+		});
+
+		it("ignore la touche P quand les raccourcis sont désactivés", async () => {
+			const storage = memoryStorage();
+			storage.setItem("piano-midi-visualizer:settings", '{"shortcuts":false}');
+			bootFullscreen(true, storage);
+			document.dispatchEvent(new KeyboardEvent("keydown", { key: "p" }));
+			await wait(60);
+			expect(buttonByText("Plein écran")).toBeTruthy();
+		});
+
+		it("remet le bouton à jour quand le navigateur quitte le plein écran (Échap)", async () => {
+			bootFullscreen();
+			buttonByText("Plein écran").click();
+			await wait(60);
+			state.active = false;
+			state.listener();
+			await wait(60);
+			expect(buttonByText("Plein écran")).toBeTruthy();
+		});
+
+		it("n'affiche pas le bouton quand le navigateur ne gère pas le plein écran", () => {
+			bootFullscreen(false);
+			expect(
+				[...root.querySelectorAll("button")].some(
+					(b) =>
+						b.textContent?.includes("plein écran") ||
+						b.textContent?.startsWith("Plein écran"),
+				),
+			).toBe(false);
+		});
+
+		it("prévient quand le navigateur refuse et reste sur « Plein écran »", async () => {
+			state.refuse = true;
+			bootFullscreen();
+			buttonByText("Plein écran").click();
+			await wait(60);
+			expect(said()).toContain("Le navigateur n'a pas autorisé le plein écran");
+			expect(buttonByText("Plein écran")).toBeTruthy();
 		});
 	});
 });

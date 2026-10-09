@@ -5,7 +5,8 @@ Page web statique, hébergée sur GitHub Pages, qui capture en direct les notes 
 ## Fonctionnalités
 
 <!-- vibe:begin:features -->
-Aucune fonctionnalité publiée pour l'instant.
+- Activer le MIDI d'un clic et voir la liste de ses pianos branchés, mise à jour dès qu'on en branche ou débranche un.
+- Messages clairs si le navigateur ne gère pas le MIDI, si l'accès est refusé ou en cas d'échec.
 <!-- vibe:end:features -->
 
 ## Installation
@@ -35,5 +36,6 @@ npm run lint     # vérifie et corrige le style
 ## Documentation
 
 <!-- vibe:begin:docs-index -->
-No additional documentation yet.
+- [Architecture](docs/architecture.md) — comment les parties de la page s'articulent
+- [Tests](docs/testing.md) — ce que couvrent les tests et comment les lancer
 <!-- vibe:end:docs-index -->

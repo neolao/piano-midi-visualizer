@@ -1,5 +1,5 @@
 # Module: app
-**Role:** Amorce l'application dans la page (`#app`).
+**Role:** Amorce la page et relie le contrôleur MIDI au panneau.
 **Files:** `src/main.ts`
 **Exports:** aucun (point d'entrée)
-**Depends on:** aucun pour l'instant
+**Depends on:** `modules/midi-access.md`, `modules/midi-panel.md`

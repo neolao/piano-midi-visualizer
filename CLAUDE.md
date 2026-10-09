@@ -61,3 +61,7 @@ Agents active for `/vibe:review` on this project:
 | `vibe:review-performance` | ✅ | real-time render loop (notes MIDI en direct → partition) |
 | `vibe:review-web-security` | ❌ | no HTTP endpoints exposed (site statique) |
 | `vibe:review-ddd` | ❌ | no explicit domain model |
+
+## UX context <!-- ux:context -->
+
+Product understanding and UI inventory live in `.ux/`. Read `.ux/product.md` before changing anything user-facing, `.ux/inventory.md` before adding a component or a style — reuse what exists — and `.ux/style.md` (when present) before choosing any color, font or spacing. Specs: `.ux/flows/`, `.ux/screens/`.

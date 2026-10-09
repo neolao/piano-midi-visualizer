@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-09
+
 ### Added
 
 - Les utilisateurs installent l'application sur Android depuis Chrome (menu « Installer l'application ») : elle s'ouvre en plein écran avec son icône de piano, sans barre d'adresse ; elle reste en ligne seulement.
@@ -50,7 +52,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 - Les utilisateurs peuvent activer le MIDI d'un clic et voir la liste de leurs pianos branchés, mise à jour à chaud, avec des messages clairs si le navigateur est incompatible, si l'accès est refusé ou en cas d'échec.
 
-[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/neolao/piano-midi-visualizer/compare/v0.3.0...v0.3.1

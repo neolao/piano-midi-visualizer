@@ -1,5 +1,5 @@
 # Module: midi-panel
-**Role:** Affiche l'état MIDI dans la page et annonce les changements aux lecteurs d'écran.
-**Files:** `src/midi-panel.ts`
-**Exports:** `createMidiPanel(root, onActivate): MidiPanel`
+**Role:** Affiche la barre MIDI et la scène d'état (activation, erreurs, aide, bandeau piano débranché).
+**Files:** `src/midi-panel.ts`, `src/strings.ts`
+**Exports:** `createMidiPanel({bar, notice}, onActivate)`
 **Depends on:** `modules/midi-access.md` (type `MidiStatus`)

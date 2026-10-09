@@ -84,4 +84,4 @@ Phrases courtes, directes, vouvoiement, orientées vers l'action suivante (« Jo
 
 ## Source of truth
 
-`this file — until /ux:implement creates the tokens in the project`
+`src/styles/tokens.css` (variables CSS) et `src/styles/base.css`

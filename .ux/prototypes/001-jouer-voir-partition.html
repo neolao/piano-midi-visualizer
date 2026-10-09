@@ -115,7 +115,7 @@ function scoreSVG(){
   if(it.cur&&S.names)o+=`<text x="${x+30}" y="${(lowTreble?t1+g*2:t2+g*2)+8}" font-size="22" font-weight="700" fill="var(--text)">${it.c.slice().sort((a,b)=>a-b).map(m=>note(m).name).join(' · ')}</text>`});
  return o+'</svg>'}
 function chordText(c){const ns=c.slice().sort((a,b)=>a-b).map(m=>note(m).full);return ns.join(', ')}
-function kbSVG(){const lit=new Set(S.current);let o='<svg viewBox="0 0 630 100" aria-hidden="true">';let x=0;const whites=[];for(let m=48;m<84;m++){if(![1,3,6,8,10].includes(m%12))whites.push(m)}
+function kbSVG(){const lit=new Set(S.current);let o='<svg viewBox="0 0 630 100" aria-hidden="true">';const x=0;const whites=[];for(let m=48;m<84;m++){if(![1,3,6,8,10].includes(m%12))whites.push(m)}
  whites.forEach((m,i)=>{o+=`<rect x="${i*30}" y="1" width="30" height="98" fill="${lit.has(m)?'var(--primary)':'var(--surface-raised)'}" stroke="var(--border)" stroke-width="2"/>`;});
  whites.forEach((m,i)=>{if([0,2,5,7,9].includes(m%12)&&m+1<84){const b=m+1;o+=`<rect x="${i*30+20}" y="1" width="20" height="60" fill="${lit.has(b)?'var(--primary)':'var(--text)'}" stroke="var(--text)" stroke-width="2"/>`}});
  return o+'</svg>'}
@@ -141,7 +141,7 @@ function render(){
   if(!S.online)top=`<div class="banner" role="status"><span aria-hidden="true">⚠</span> Piano débranché — rebranchez-le ou choisissez un autre piano<span class="sp"></span></div>`;
   if(S.rec.st==='interrupted')top+=`<div class="banner warn"><span aria-hidden="true">!</span> Interrompu, ${S.rec.secs} s enregistrées</div>`;
   const none=!S.history.length&&!S.current.length;
-  let desc=`<div class="sr" id="desc">${S.current.length?'Accord en cours : '+chordText(S.current):'Aucune note en cours.'} Historique : ${S.history.length} accord(s).</div>`;
+  const desc=`<div class="sr" id="desc">${S.current.length?'Accord en cours : '+chordText(S.current):'Aucune note en cours.'} Historique : ${S.history.length} accord(s).</div>`;
   st=`<div tabindex="0" role="group" aria-label="Partition" style="outline-offset:-6px">${top}${scoreSVG()}${none&&S.online?`<div class="msg sm">${S.empty?'Rien à enregistrer, jouez d\'abord':'Jouez une note, elle apparaît ici'}</div>`:''}${desc}</div>`}
  $('stage').innerHTML=st;
  // clavier visuel

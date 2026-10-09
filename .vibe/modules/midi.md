@@ -1,5 +1,5 @@
 # Module: midi
-**Role:** Utilitaires MIDI purs, sans accès au matériel.
+**Role:** Décode les messages MIDI bruts en événements de note (vélocité 0 = relâchée).
 **Files:** `src/midi.ts`
-**Exports:** `nomDeNote(numero: number): string`
+**Exports:** `decodeMidiMessage(data): NoteEvent | null`
 **Depends on:** aucun

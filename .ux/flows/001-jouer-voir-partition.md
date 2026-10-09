@@ -1,7 +1,7 @@
 ---
 id: 001
 title: Jouer et voir sa partition en direct
-status: validated
+status: validated (cœur implémenté ; enregistrement, clavier visuel et choix de piano restent à faire)
 date: 2026-10-09
 job: Quand je m'entraîne au piano, je veux voir en direct sur une partition ce que je joue, afin de vérifier mes notes.
 screens: [jouer-partition]

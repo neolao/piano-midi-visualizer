@@ -1,22 +1,46 @@
 import { describe, expect, it } from "vitest";
-import { nomDeNote } from "./midi";
+import { decodeMidiMessage } from "./midi";
 
-describe("nomDeNote", () => {
-	it("retourne C4 pour le do central (60)", () => {
-		expect(nomDeNote(60)).toBe("C4");
+describe("decodeMidiMessage", () => {
+	it("décode un note on", () => {
+		expect(decodeMidiMessage([0x90, 60, 100])).toEqual({
+			kind: "on",
+			note: 60,
+			velocity: 100,
+		});
 	});
 
-	it("gère les bornes 0 et 127", () => {
-		expect(nomDeNote(0)).toBe("C-1");
-		expect(nomDeNote(127)).toBe("G9");
+	it("décode un note off", () => {
+		expect(decodeMidiMessage([0x80, 60, 0])).toEqual({
+			kind: "off",
+			note: 60,
+			velocity: 0,
+		});
 	});
 
-	it("nomme les dièses", () => {
-		expect(nomDeNote(61)).toBe("C#4");
+	it("traite un note on de vélocité 0 comme un note off", () => {
+		expect(decodeMidiMessage([0x90, 60, 0])).toEqual({
+			kind: "off",
+			note: 60,
+			velocity: 0,
+		});
 	});
 
-	it("lève une erreur hors plage", () => {
-		expect(() => nomDeNote(128)).toThrow(RangeError);
-		expect(() => nomDeNote(-1)).toThrow(RangeError);
+	it("reconnaît les 16 canaux", () => {
+		expect(decodeMidiMessage([0x9f, 72, 64])?.kind).toBe("on");
+		expect(decodeMidiMessage([0x85, 72, 64])?.kind).toBe("off");
+	});
+
+	it("ignore les messages qui ne sont pas des notes", () => {
+		expect(decodeMidiMessage([0xb0, 64, 127])).toBeNull();
+		expect(decodeMidiMessage([0xf8])).toBeNull();
+		expect(decodeMidiMessage([0xe0, 0, 64])).toBeNull();
+	});
+
+	it("ignore les messages invalides ou tronqués", () => {
+		expect(decodeMidiMessage([])).toBeNull();
+		expect(decodeMidiMessage([0x90, 60])).toBeNull();
+		expect(decodeMidiMessage([0x90, 200, 64])).toBeNull();
+		expect(decodeMidiMessage([0x90, 60, 200])).toBeNull();
 	});
 });

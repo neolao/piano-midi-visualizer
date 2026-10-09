@@ -4,6 +4,7 @@ export interface MidiInputLike {
 	manufacturer?: string | null;
 	type: string;
 	state: string;
+	onmidimessage?: ((event: { data?: ArrayLike<number> | null }) => void) | null;
 }
 
 export interface MidiAccessLike {
@@ -68,6 +69,7 @@ function describeChanges(
 export function createMidiController(
 	env: MidiEnvironment,
 	onChange: (status: MidiStatus) => void,
+	onMessage?: (data: ArrayLike<number>) => void,
 ): MidiController {
 	const request = env.requestMIDIAccess;
 	let status: MidiStatus = request
@@ -79,8 +81,21 @@ export function createMidiController(
 		onChange(next);
 	};
 
+	const listenToNotes = (access: MidiAccessLike) => {
+		for (const input of access.inputs.values()) {
+			if (input.type !== "input") continue;
+			input.onmidimessage =
+				input.state === "connected"
+					? (event) => {
+							if (event.data) onMessage?.(event.data);
+						}
+					: null;
+		}
+	};
+
 	const listen = (access: MidiAccessLike) => {
 		access.onstatechange = () => {
+			listenToNotes(access);
 			const before = status.kind === "ready" ? status.inputs : [];
 			const inputs = connectedInputs(access);
 			update({
@@ -102,6 +117,7 @@ export function createMidiController(
 			try {
 				const access = await request();
 				listen(access);
+				listenToNotes(access);
 				update({
 					kind: "ready",
 					inputs: connectedInputs(access),

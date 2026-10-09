@@ -6,7 +6,8 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": ["**", "!.ux", "!.vibe"]
 	},
 	"formatter": {
 		"enabled": true,

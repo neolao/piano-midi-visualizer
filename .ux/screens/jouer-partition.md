@@ -2,8 +2,8 @@
 slug: jouer-partition
 title: Jouer et voir sa partition
 flow: 001
-status: validated
-source: src/main.ts, src/midi-panel.ts (état d'accès uniquement ; le reste à réaliser)
+status: implemented (cœur)
+source: src/app.ts, src/midi-panel.ts, src/score.ts, src/strings.ts, src/describe.ts, src/styles/base.css, src/styles/tokens.css
 ---
 
 # Jouer et voir sa partition
@@ -88,3 +88,16 @@ Raccourcis d'une touche (R, F, E, L) : affichés à l'écran, désactivables, in
 - **Announcements (live regions / screen reader):** zone polie réservée aux changements d'état (connexion, débranchement, enregistrement démarré/arrêté, fichier enregistré). Jamais d'annonce note par note ; un résumé poli environ 2 s après l'arrêt du jeu, réglable ; touche L pour le relire. La partition SVG est `aria-hidden`, doublée d'une description textuelle de l'accord courant et d'une liste de l'historique accessible au clavier. Le clavier visuel est décoratif et `aria-hidden`.
 - **Contrast & targets:** texte ≥ 4,5:1 ; portées, notes et contours des touches ≥ 3:1 ; cibles ≥ 44 px (jamais < 24 px) ; la note en cours n'est jamais signalée par la couleur seule (forme ou épaisseur en plus) ; thèmes clair et sombre à trancher dans `/ux:style`.
 - **Motion:** défilement par pas discrets ; `prefers-reduced-motion` le remplace par un saut sans animation ; aucun clignotement ; « Figer » respecte WCAG 2.2.2.
+
+## Implémentation (cœur « voir ma partition »)
+
+Captures réelles : `.ux/captures/001-jouer-voir-partition/` (`after-avant-activation`, `after-pret-vide`, `after-accord-en-cours`, `after-accord-et-historique`, `after-tiroir-options`, `after-bemols`, `after-fige`, `after-efface`, `after-focus-clavier`, `after-piano-debranche`, `after-tablette-1024`, `after-refuse`, `after-echec`, `after-incompatible`).
+
+Écarts assumés avec la spec ci-dessus, en attendant les items du backlog :
+- Enregistrer, Télécharger et Nouvel enregistrement ne sont pas affichés (item 012).
+- Clavier visuel non affiché (item 011).
+- Le bouton « Changer » et le choix de piano sont absents ; le bandeau dit « Piano débranché — rebranchez-le pour continuer » (item 009).
+- Le nom d'accord (« Do majeur ») n'est pas calculé : l'annonce donne « Accord : Do 4, Mi 4, Sol 4 ».
+- Le tiroir d'options garde le focus sur « Options » à l'ouverture et reste atteignable au Tab ; il se ferme avec Échap.
+- L'historique accessible est une liste dans la région « Partition » (lecteurs d'écran), pas un tableau visible.
+- Les libellés « Figer l'historique », « Effacer la partition » et « Bémols à la place des dièses » suivent la table Content ; les bascules du tiroir gardent le nom du réglage et portent l'état dans `aria-pressed`.

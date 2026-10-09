@@ -1,20 +1,14 @@
 import type { MidiStatus } from "./midi-access";
+import { STRINGS } from "./strings";
 
 export interface MidiPanel {
 	render(status: MidiStatus): void;
 }
 
-const MESSAGES = {
-	requesting: "Demande d'accès en cours…",
-	empty: "Aucun piano détecté. Branchez votre piano MIDI et allumez-le.",
-	unsupported:
-		"Votre navigateur ne gère pas le MIDI. Essayez Chrome, Edge ou Opera.",
-	insecure:
-		"Le MIDI exige une connexion sécurisée (HTTPS). Ouvrez cette page en HTTPS, avec Chrome, Edge ou Opera.",
-	denied:
-		"L'accès au MIDI a été refusé. Autorisez-le dans les réglages du site (icône à côté de l'adresse), puis rechargez la page.",
-	error: "Impossible d'activer le MIDI. Vérifiez votre piano puis réessayez.",
-};
+interface Elements {
+	bar: HTMLElement;
+	notice: HTMLElement;
+}
 
 function element<K extends keyof HTMLElementTagNameMap>(
 	tag: K,
@@ -26,61 +20,75 @@ function element<K extends keyof HTMLElementTagNameMap>(
 }
 
 export function createMidiPanel(
-	root: HTMLElement,
+	{ bar, notice }: Elements,
 	onActivate: () => void,
 ): MidiPanel {
-	const content = element("section");
-	content.tabIndex = -1;
-	const live = element("div");
-	live.setAttribute("role", "status");
-	live.setAttribute("aria-live", "polite");
-	root.replaceChildren(content, live);
+	let hadPiano = false;
+	notice.tabIndex = -1;
 
-	const button = (label: string) => {
+	const button = (label: string, primary: boolean) => {
 		const b = element("button", label);
 		b.type = "button";
+		if (primary) b.className = "primary";
 		b.addEventListener("click", onActivate);
 		return b;
 	};
 
-	const body = (status: MidiStatus): HTMLElement[] => {
+	const noticeBody = (status: MidiStatus, pianos: number): HTMLElement[] => {
 		switch (status.kind) {
 			case "idle":
-				return [button("Activer le MIDI")];
+				return [button(STRINGS.activate, true)];
 			case "requesting":
-				return [element("p", MESSAGES.requesting)];
+				return [element("p", STRINGS.requesting)];
 			case "unsupported":
 				return [
 					element(
 						"p",
-						status.insecure ? MESSAGES.insecure : MESSAGES.unsupported,
+						status.insecure ? STRINGS.insecure : STRINGS.unsupported,
 					),
 				];
 			case "denied":
-				return [element("p", MESSAGES.denied)];
+				return [element("p", STRINGS.denied)];
 			case "error":
-				return [element("p", MESSAGES.error), button("Réessayer")];
+				return [element("p", STRINGS.error), button(STRINGS.retry, true)];
 			case "ready": {
-				if (status.inputs.length === 0) return [element("p", MESSAGES.empty)];
-				const list = element("ul");
-				for (const input of status.inputs) {
-					const item = element("li", input.name);
-					if (input.manufacturer)
-						item.append(" ", element("small", input.manufacturer));
-					list.append(item);
-				}
-				return [list];
+				if (pianos > 0) return [];
+				if (!hadPiano) return [element("p", STRINGS.noPianoHelp)];
+				const banner = element("div");
+				banner.className = "banner";
+				banner.append(
+					element("span", "⚠"),
+					element("span", STRINGS.pianoUnplugged),
+				);
+				banner.firstElementChild?.setAttribute("aria-hidden", "true");
+				return [banner];
 			}
 		}
 	};
 
+	const renderBar = (status: MidiStatus) => {
+		const pianos = status.kind === "ready" ? status.inputs : [];
+		const dot = element("span");
+		dot.setAttribute("aria-hidden", "true");
+		dot.className = `dot${pianos.length > 0 ? " ok" : status.kind === "ready" && hadPiano ? " off" : ""}`;
+		const text =
+			pianos.length > 0
+				? STRINGS.pianoConnected(pianos.map((p) => p.name).join(", "))
+				: STRINGS.noPiano;
+		const name = element("span", text);
+		name.className = "bar-name";
+		name.title = text;
+		bar.replaceChildren(dot, name);
+	};
+
 	return {
 		render(status) {
-			const hadFocus = content.contains(document.activeElement);
-			content.replaceChildren(...body(status));
-			live.textContent =
-				status.kind === "ready" ? (status.announcement ?? "") : "";
-			if (hadFocus) (content.querySelector("button") ?? content).focus();
+			const pianos = status.kind === "ready" ? status.inputs.length : 0;
+			if (pianos > 0) hadPiano = true;
+			const hadFocus = notice.contains(document.activeElement);
+			notice.replaceChildren(...noticeBody(status, pianos));
+			renderBar(status);
+			if (hadFocus) (notice.querySelector("button") ?? notice).focus();
 		},
 	};
 }

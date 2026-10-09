@@ -1,23 +1,19 @@
-const NOMS_NOTES = [
-	"C",
-	"C#",
-	"D",
-	"D#",
-	"E",
-	"F",
-	"F#",
-	"G",
-	"G#",
-	"A",
-	"A#",
-	"B",
-];
+export interface NoteEvent {
+	kind: "on" | "off";
+	note: number;
+	velocity: number;
+}
 
-/** Convertit un numéro de note MIDI (0-127) en nom scientifique, ex. 60 → "C4". */
-export function nomDeNote(numero: number): string {
-	if (!Number.isInteger(numero) || numero < 0 || numero > 127) {
-		throw new RangeError(`Numéro de note MIDI invalide : ${numero}`);
-	}
-	const octave = Math.floor(numero / 12) - 1;
-	return `${NOMS_NOTES[numero % 12]}${octave}`;
+const NOTE_OFF = 0x80;
+const NOTE_ON = 0x90;
+
+/** Décode un message MIDI brut ; renvoie null pour tout ce qui n'est pas une note valide. */
+export function decodeMidiMessage(data: ArrayLike<number>): NoteEvent | null {
+	if (data.length < 3) return null;
+	const [status, note, velocity] = [data[0], data[1], data[2]];
+	const type = status & 0xf0;
+	if (type !== NOTE_OFF && type !== NOTE_ON) return null;
+	if (note > 127 || velocity > 127) return null;
+	const isOn = type === NOTE_ON && velocity > 0;
+	return { kind: isOn ? "on" : "off", note, velocity };
 }

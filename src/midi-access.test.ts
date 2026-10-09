@@ -30,7 +30,7 @@ function fakeAccess(initial: MidiInputLike[]) {
 		},
 		setState: (id: string, state: string) => {
 			const current = map.get(id);
-			if (current) map.set(id, { ...current, state });
+			if (current) current.state = state;
 			access.onstatechange?.({});
 		},
 	};
@@ -182,5 +182,51 @@ describe("createMidiController", () => {
 		await controller.activate();
 		expect(seen).toEqual([]);
 		expect(controller.status.kind).toBe("unsupported");
+	});
+
+	describe("réception des notes", () => {
+		function withMessages(initial: MidiInputLike[]) {
+			const fake = fakeAccess(initial);
+			const received: number[][] = [];
+			const controller = createMidiController(
+				{ requestMIDIAccess: async () => fake.access, isSecureContext: true },
+				() => {},
+				(data) => received.push(Array.from(data)),
+			);
+			return { fake, controller, received };
+		}
+
+		it("transmet les messages des entrées connectées après activation", async () => {
+			const piano = input("a", "Piano A");
+			const { controller, received } = withMessages([piano]);
+			await controller.activate();
+			piano.onmidimessage?.({ data: new Uint8Array([0x90, 60, 100]) });
+			expect(received).toEqual([[0x90, 60, 100]]);
+		});
+
+		it("écoute aussi un piano branché à chaud", async () => {
+			const { fake, controller, received } = withMessages([]);
+			await controller.activate();
+			const late = input("b", "Piano B");
+			fake.add(late);
+			late.onmidimessage?.({ data: new Uint8Array([0x80, 60, 0]) });
+			expect(received).toEqual([[0x80, 60, 0]]);
+		});
+
+		it("n'écoute plus une entrée qui passe à l'état déconnecté", async () => {
+			const piano = input("a", "Piano A");
+			const { fake, controller } = withMessages([piano]);
+			await controller.activate();
+			fake.setState("a", "disconnected");
+			expect(piano.onmidimessage).toBeNull();
+		});
+
+		it("ignore un message sans données", async () => {
+			const piano = input("a", "Piano A");
+			const { controller, received } = withMessages([piano]);
+			await controller.activate();
+			piano.onmidimessage?.({ data: null });
+			expect(received).toEqual([]);
+		});
 	});
 });

@@ -1,0 +1,42 @@
+/* Tokens de la direction « Cabinet de lecture » (.ux/style.md). Thème clair seul. */
+:root {
+	color-scheme: light;
+
+	--color-surface: #f7f4ee;
+	--color-surface-raised: #fffdf8;
+	--color-surface-sunken: #ede8df;
+	--color-text: #1e1b18;
+	--color-text-muted: #5e5750;
+	--color-note-history: #6f6760;
+	--color-primary: #1f5c7a;
+	--color-on-primary: #ffffff;
+	--color-border: #857d74;
+	--color-focus: #1e1b18;
+	--color-success: #2e6b3a;
+	--color-error: #a32a2a;
+	--color-warning: #7a4f00;
+	--color-record: #c2185b;
+
+	--font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	--text-sm: 16px;
+	--text-base: 18px;
+	--text-lg: 22px;
+	--text-xl: 28px;
+	--text-display: 40px;
+
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 24px;
+	--space-6: 32px;
+	--space-7: 48px;
+
+	--radius-control: 8px;
+	--radius-pill: 999px;
+	--border-width: 2px;
+	--target-size: 44px;
+	--shadow-drawer: 0 6px 20px rgba(30, 27, 24, 0.18);
+	--motion-fast: 120ms;
+	--motion-panel: 200ms;
+}

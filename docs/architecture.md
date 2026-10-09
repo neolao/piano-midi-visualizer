@@ -2,28 +2,39 @@
 
 # Architecture
 
-La page est composée de trois modules dans `src/`, plus l'amorçage.
+La page est écrite en TypeScript sans framework. La logique pure est séparée du DOM : seuls `app`, `midi-panel` et `score` touchent la page.
 
 | Module | Rôle |
 |---|---|
-| `midi-access.ts` | Demande l'accès Web MIDI, calcule l'état (`MidiStatus`) et suit les branchements à chaud. Aucun accès au DOM. |
-| `midi-panel.ts` | Dessine l'état dans la page et annonce les changements dans une zone `role="status"`. |
-| `midi.ts` | Utilitaires MIDI purs (numéro de note → nom). |
-| `main.ts` | Relie le contrôleur au panneau. |
+| `main.ts` | Charge les styles, branche le navigateur réel (`browserMidiEnvironment`, `localStorage`) et monte l'application. |
+| `app.ts` | Assemble la page : barre MIDI, partition, commandes (Figer, Effacer, Options), annonces vocales, raccourcis. |
+| `midi-access.ts` | Demande l'accès Web MIDI, calcule l'état (`MidiStatus`), suit les branchements et transmet les messages de notes. |
+| `midi-panel.ts` | Dessine la barre MIDI et la scène d'état (activation, erreurs, aide, bandeau « débranché »). |
+| `midi.ts` | Décode les messages MIDI bruts en `NoteEvent`. |
+| `chords.ts`, `held-notes.ts` | Notes tenues, regroupement en accords (60 ms), historique borné, effacement et restauration. |
+| `staff.ts` | Place une note sur la portée (clé, altération, nom français, clé VexFlow). |
+| `score.ts` | Dessine les deux portées avec VexFlow (8 emplacements). |
+| `describe.ts` | Décrit les accords en toutes lettres pour les lecteurs d'écran. |
+| `settings.ts` | Réglages mémorisés dans `localStorage`. |
+| `strings.ts` | Tous les textes en français. |
 
 ```mermaid
 flowchart LR
-  Navigateur[navigator.requestMIDIAccess] --> Controleur[midi-access: createMidiController]
-  Controleur -- MidiStatus --> Panneau[midi-panel: render]
-  Panneau -- clic Activer / Réessayer --> Controleur
+  Navigateur[navigator.requestMIDIAccess] --> Acces[midi-access]
+  Acces -- messages --> Decodage[midi]
+  Decodage -- NoteEvent --> Accords[chords]
+  Acces -- MidiStatus --> Panneau[midi-panel]
+  Accords -- ChordSnapshot --> Partition[score]
+  Accords --> Description[describe]
+  Reglages[settings] --> App[app]
+  App --> Panneau
+  App --> Partition
+  App --> Description
 ```
-
-## États
-
-`idle` → `requesting` → `ready` (liste des entrées, annonce du dernier changement) ou `denied` (refus, pas de nouvelle demande) ou `error` (échec inattendu, « Réessayer » permis). `unsupported` est décidé dès le départ quand Web MIDI est absent.
 
 ## Choix de conception
 
-- L'environnement (`MidiEnvironment`) est injecté dans le contrôleur : les tests simulent le navigateur sans matériel.
-- Le panneau n'utilise que `textContent`, jamais de HTML brut : un nom de périphérique ne peut pas injecter de balises.
-- Seules les entrées connectées (`type: input`, `state: connected`) sont listées.
+- L'environnement (`MidiEnvironment`, `Storage`, horloge) est injecté : les tests simulent le navigateur sans matériel.
+- Le DOM est construit avec `textContent` uniquement, jamais de HTML brut.
+- Les styles passent par des variables CSS (`src/styles/tokens.css`) ; `score.ts` les lit pour colorer le SVG.
+- Le rendu de la partition est regroupé par image d'affichage (`requestAnimationFrame`), pas un rendu par message MIDI.

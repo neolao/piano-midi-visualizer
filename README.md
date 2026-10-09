@@ -5,8 +5,11 @@ Page web statique, hébergée sur GitHub Pages, qui capture en direct les notes 
 ## Fonctionnalités
 
 <!-- vibe:begin:features -->
-- Activer le MIDI d'un clic et voir la liste de ses pianos branchés, mise à jour dès qu'on en branche ou débranche un.
-- Messages clairs si le navigateur ne gère pas le MIDI, si l'accès est refusé ou en cas d'échec.
+- Voir en direct sur une partition à deux portées les notes et accords que l'on joue, avec l'historique des accords précédents et les noms de notes (Do, Ré, Mi…).
+- Figer l'historique pour le relire, effacer la partition (avec annulation), choisir entre dièses et bémols ; les réglages sont mémorisés.
+- Activer le MIDI d'un clic, avec des messages clairs si le navigateur est incompatible, si l'accès est refusé ou en cas d'échec.
+- Une annonce vocale du dernier accord après un silence et des raccourcis clavier (F, E, L) pour les lecteurs d'écran.
+- Utilisable en ligne, sans installation : https://neolao.github.io/piano-midi-visualizer/
 <!-- vibe:end:features -->
 
 ## Installation
@@ -25,17 +28,27 @@ npm install
 
 <!-- vibe:begin:usage -->
 ```sh
-npm run dev      # serveur local avec rechargement
-npm run build    # génère le site statique dans dist/
-npm run preview  # sert le build en local
-npm test         # lance les tests
-npm run lint     # vérifie et corrige le style
+npm run dev       # serveur local avec rechargement
+npm run build     # génère le site statique dans dist/
+npm run preview   # sert le build en local
+npm test          # lance les tests
+npm run lint      # vérifie et corrige le style
+npm run lint:ci   # vérifie le style sans rien modifier (utilisé par la CI)
+npm run check:dist  # vérifie que le site construit n'utilise que des chemins relatifs
 ```
 <!-- vibe:end:usage -->
+
+## Déploiement
+
+Chaque envoi sur la branche principale lance les contrôles (style, tests, construction) puis publie le site sur GitHub Pages. Rien n'est publié si un contrôle échoue ou depuis une proposition de changement.
+
+- **Réglage à faire une fois :** dans les réglages du dépôt, rubrique Pages, choisir la source « GitHub Actions ».
+- **Adresse :** https://neolao.github.io/piano-midi-visualizer/
+- **Revenir en arrière :** relancer le workflow sur un commit sain (onglet Actions, « Run workflow »), ou annuler le commit fautif avec `git revert` puis l'envoyer sur la branche principale.
 
 ## Documentation
 
 <!-- vibe:begin:docs-index -->
 - [Architecture](docs/architecture.md) — comment les parties de la page s'articulent
-- [Tests](docs/testing.md) — ce que couvrent les tests et comment les lancer
+- [Tests](docs/testing.md) — ce que couvrent les tests, comment les lancer et la CI
 <!-- vibe:end:docs-index -->

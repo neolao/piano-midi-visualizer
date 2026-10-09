@@ -2,13 +2,22 @@
 
 # Tests
 
-- Lancer : `npm test` (Vitest, environnement jsdom).
-- Un fichier de test par module, à côté de lui : `src/*.test.ts`.
+- Lancer : `npm test` (Vitest, environnement jsdom). La commande `npm run lint:ci` vérifie le style sans rien modifier.
+- Un fichier de test par module, à côté de lui : `src/*.test.ts` ; le contrôle du site construit est dans `scripts/check-dist.test.ts`.
 
 | Fichier | Ce qu'il couvre |
 |---|---|
-| `midi-access.test.ts` | États, activation, refus (`SecurityError`, `NotAllowedError`), échec inattendu et réessai, branchement et débranchement à chaud avec annonces. Utilise une fausse `MIDIAccess`. |
-| `midi-panel.test.ts` | Textes et boutons de chaque état, zone `role="status"`, absence d'injection HTML, focus conservé. |
-| `midi.test.ts` | Conversion numéro de note → nom. |
+| `midi.test.ts` | Décodage des messages (note jouée, relâchée, vélocité 0, 16 canaux, messages invalides). |
+| `held-notes.test.ts`, `chords.test.ts` | Notes tenues, regroupement en accords, historique borné, effacement, restauration. |
+| `staff.test.ts` | Clé, altération, noms, clés VexFlow, bornes. |
+| `describe.test.ts`, `settings.test.ts` | Descriptions pour lecteurs d'écran ; réglages et stockage indisponible. |
+| `midi-access.test.ts` | États d'accès, refus, échec et réessai, branchement à chaud, réception des notes. |
+| `midi-panel.test.ts` | Barre MIDI et scène d'état. |
+| `app.test.ts` | Assemblage : Figer, Effacer et annuler, tiroir d'options, raccourcis, annonces (le rendu VexFlow est simulé). |
+| `scripts/check-dist.test.ts` | Détection des chemins absolus qui casseraient GitHub Pages. |
 
-Le rendu avec un vrai piano n'est pas automatisé : il se vérifie à la main dans Chrome, Edge ou Opera.
+Le dessin VexFlow n'est pas testé dans jsdom (mesure de texte) : il se vérifie en vrai navigateur. Le rendu avec un vrai piano se contrôle à la main dans Chrome, Edge ou Opera.
+
+## Intégration continue
+
+Le workflow `.github/workflows/deploy.yml` lance `lint:ci`, `npm test`, `npm run build` et `npm run check:dist` à chaque envoi et à chaque proposition de changement, puis publie sur GitHub Pages seulement depuis la branche principale.

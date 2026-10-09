@@ -11,6 +11,7 @@
 - [`modules/score.md`](modules/score.md) — rendu VexFlow de la partition
 - [`modules/describe.md`](modules/describe.md) — description textuelle pour lecteurs d'écran
 - [`modules/settings.md`](modules/settings.md) — réglages mémorisés
+- [`modules/ci.md`](modules/ci.md) — contrôles et déploiement GitHub Pages
 
 ## Observed patterns
 - Les tests Vitest vivent à côté du module testé (`*.test.ts`) ; le dessin VexFlow n'est pas testé dans jsdom.

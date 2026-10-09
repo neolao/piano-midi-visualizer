@@ -9,7 +9,9 @@
 		"build": "tsc --noEmit && vite build",
 		"preview": "vite preview",
 		"test": "vitest run",
-		"lint": "biome check --write ."
+		"lint": "biome check --write .",
+		"lint:ci": "biome check .",
+		"check:dist": "node scripts/check-dist.mjs"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.15",

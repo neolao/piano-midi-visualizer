@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- La page occupe toute la hauteur de l'écran sur Android : la barre de boutons colle au bord du bas, sans bande vide dessous, et laisse la place de la barre de gestes du système.
+
 ## [0.7.0] - 2026-10-09
 
 ### Added

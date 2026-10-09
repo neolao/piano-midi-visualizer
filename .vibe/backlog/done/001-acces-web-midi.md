@@ -1,5 +1,5 @@
 ---
-status: in_progress
+status: done
 ---
 # Accéder à la Web MIDI API
 

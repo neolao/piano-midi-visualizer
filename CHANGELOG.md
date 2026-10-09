@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-09
+
 ### Added
 
 - Les utilisateurs règlent la mesure (2/4, 3/4, 4/4 ou 6/8) et le tempo, retrouvés à la visite suivante, et lancent un métronome qui bat la mesure avec un son (qu'on peut couper) et un temps affiché à l'écran.
@@ -38,7 +40,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 - Les utilisateurs peuvent activer le MIDI d'un clic et voir la liste de leurs pianos branchés, mise à jour à chaud, avec des messages clairs si le navigateur est incompatible, si l'accès est refusé ou en cas d'échec.
 
-[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/neolao/piano-midi-visualizer/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/neolao/piano-midi-visualizer/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/neolao/piano-midi-visualizer/compare/v0.1.0...v0.2.0
